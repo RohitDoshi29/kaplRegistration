@@ -1,0 +1,1457 @@
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import confetti from 'canvas-confetti';
+import { supabase } from './lib/supabase';
+import { Player, PlayerRole, PaymentMethod, PaymentStatus } from './types';
+import { cn } from './lib/utils';
+import {
+  Trophy,
+  UserPlus,
+  ShieldCheck,
+  Sparkles,
+  Phone,
+  Mail,
+  User,
+  Star,
+  Flame,
+  Award,
+  CheckCircle2,
+  ArrowRight,
+  Gavel,
+  Check,
+  AlertCircle,
+  HelpCircle,
+  QrCode,
+  CreditCard,
+  Smartphone,
+  Copy,
+  Upload,
+  Search,
+  Users,
+  RefreshCw,
+  Download,
+  Coins,
+  Clock,
+  LayoutGrid,
+  List,
+  X,
+  Radio,
+} from 'lucide-react';
+
+const OFFICIAL_UPI_ID = 'kapl3@upi';
+const OFFICIAL_PAYEE_NAME = 'Premier League 3.0';
+const REGISTRATION_ENTRY_FEE = 500;
+const OFFICIAL_SCANNER_IMG = '/images/scanner.png';
+const PLACEHOLDER_SCANNER_SVG = '/images/scanner-placeholder.svg';
+
+const AVATAR_PRESETS = [
+  { label: 'Classic Batter', url: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=200&auto=format&fit=crop&q=80' },
+  { label: 'Pace Bowler', url: 'https://images.unsplash.com/photo-1519766304817-4f37bda74a29?w=200&auto=format&fit=crop&q=80' },
+  { label: 'Captain Gold', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80' },
+  { label: 'All-Rounder', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80' },
+  { label: 'Women Star', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
+];
+
+const PREVIOUS_TEAMS = [
+  "Kapil's Warriors",
+  "Kapil Falcons",
+  "Insta Paltans",
+  "Kapil's Devils",
+  "Goodness Royals",
+  "Kapil Ke Singham",
+  "Super Strikers",
+  "Kapil Avengers",
+  "Kapil Queens",
+  "Falconettes",
+  "Royal Challengers Women",
+  "Other / Custom Franchise",
+];
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState<'register' | 'roster'>('register');
+
+  // Form State
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [gender, setGender] = useState<'male' | 'female'>('male');
+  const [tournamentId, setTournamentId] = useState('kapl-3-mens');
+  const [role, setRole] = useState<PlayerRole>('all_rounder');
+  const [battingStyle, setBattingStyle] = useState('Right-hand bat');
+  const [bowlingStyle, setBowlingStyle] = useState('Right-arm medium');
+  const [jerseyNumber, setJerseyNumber] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [bio, setBio] = useState('');
+
+  // Experience / History
+  const [experience, setExperience] = useState('new');
+  const [previousTeam, setPreviousTeam] = useState('');
+  const [customPreviousTeam, setCustomPreviousTeam] = useState('');
+  const [pastAchievements, setPastAchievements] = useState('');
+
+  // Payment State
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('upi_qr');
+  const [transactionId, setTransactionId] = useState('');
+  const [payerName, setPayerName] = useState('');
+  const [paymentReceiptUrl, setPaymentReceiptUrl] = useState('');
+  const [paymentReceiptName, setPaymentReceiptName] = useState('');
+  const [copiedUpi, setCopiedUpi] = useState(false);
+  const [scannerImgError, setScannerImgError] = useState(false);
+
+  // Status & Success state
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [registeredSuccess, setRegisteredSuccess] = useState(false);
+  const [newlyRegisteredPlayer, setNewlyRegisteredPlayer] = useState<Player | null>(null);
+
+  // All Registered Players (from Supabase)
+  const [registeredPlayers, setRegisteredPlayers] = useState<Player[]>([]);
+  const [isLoadingRoster, setIsLoadingRoster] = useState(true);
+  const [rosterSearch, setRosterSearch] = useState('');
+  const [rosterRoleFilter, setRosterRoleFilter] = useState('all');
+  const [rosterTournamentFilter, setRosterTournamentFilter] = useState('all');
+  const [rosterViewMode, setRosterViewMode] = useState<'grid' | 'table'>('grid');
+
+  // Fetch all registered players from Supabase
+  const fetchRegisteredPlayers = useCallback(async () => {
+    setIsLoadingRoster(true);
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .select('id, name, photo_url, role, batting_style, bowling_style, tournament_id, team_id, jersey_number, base_price, mobile_number, payment_status, created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.warn('Supabase fetch error:', error.message);
+      }
+
+      const map = new Map<string, Player>();
+
+      if (data && Array.isArray(data)) {
+        data
+          .filter((p) => p && !/^[ab][1-4]-/.test(p.id))
+          .forEach((p) => {
+            map.set(p.id, {
+              id: p.id,
+              name: p.name,
+              role: (p.role as PlayerRole) || 'all_rounder',
+              batting_style: p.batting_style || 'Right-hand bat',
+              bowling_style: p.bowling_style || 'Right-arm medium',
+              jersey_number: p.jersey_number,
+              tournament_id: p.tournament_id || 'kapl-3-mens',
+              base_price: Number(p.base_price || 100),
+              photo_url: p.photo_url,
+              mobile_number: p.mobile_number || '',
+              payment_status: (p.payment_status as PaymentStatus) || 'pending',
+              created_at: p.created_at,
+            });
+          });
+      }
+
+      // Merge local storage backup registrations
+      try {
+        const rawLocal = localStorage.getItem('portal_registered_players');
+        if (rawLocal) {
+          const list: Player[] = JSON.parse(rawLocal);
+          if (Array.isArray(list)) {
+            list.forEach((p) => {
+              if (p && p.id) {
+                const existing = map.get(p.id);
+                map.set(p.id, { ...(existing || {}), ...p });
+              }
+            });
+          }
+        }
+      } catch {}
+
+      const sorted = Array.from(map.values()).sort((a, b) => {
+        const tA = new Date(a.created_at || 0).getTime();
+        const tB = new Date(b.created_at || 0).getTime();
+        return tB - tA;
+      });
+
+      setRegisteredPlayers(sorted);
+    } catch (e) {
+      console.error('Failed to load roster:', e);
+    } finally {
+      setIsLoadingRoster(false);
+    }
+  }, []);
+
+  // Initial load and real-time subscription
+  useEffect(() => {
+    fetchRegisteredPlayers();
+
+    const channel = supabase
+      .channel('player-portal-realtime-feed')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'players' },
+        () => {
+          fetchRegisteredPlayers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchRegisteredPlayers]);
+
+  // Copy UPI ID
+  const handleCopyUpi = () => {
+    if (navigator?.clipboard) {
+      navigator.clipboard.writeText(OFFICIAL_UPI_ID);
+      setCopiedUpi(true);
+      setTimeout(() => setCopiedUpi(false), 2500);
+    }
+  };
+
+  // Receipt image upload
+  const handleReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPaymentReceiptName(file.name);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setPaymentReceiptUrl(event.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Validate form
+  const validate = () => {
+    const errs: Record<string, string> = {};
+    if (!fullName.trim() || fullName.trim().length < 2) {
+      errs.fullName = 'Full name must be at least 2 characters';
+    }
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length < 10) {
+      errs.phone = 'Please enter a valid 10-digit mobile number';
+    }
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errs.email = 'Please enter a valid email address';
+    }
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  // Handle submit and save to Supabase
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    setIsSubmitting(true);
+    const playerId = `player_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const computedPaymentStatus: PaymentStatus =
+      paymentMethod === 'cash' ? 'cash_venue' : transactionId.trim() || paymentReceiptUrl ? 'paid' : 'pending';
+
+    const newPlayer: Player = {
+      id: playerId,
+      name: fullName.trim(),
+      mobile_number: phone.trim(),
+      email: email.trim() || undefined,
+      role,
+      batting_style: battingStyle,
+      bowling_style: bowlingStyle,
+      jersey_number: jerseyNumber.trim() ? Number(jerseyNumber) : null,
+      tournament_id: tournamentId,
+      base_price: 100,
+      photo_url: photoUrl.trim() || null,
+      experience,
+      previous_team: experience !== 'new' ? (previousTeam === 'Other / Custom Franchise' ? customPreviousTeam : previousTeam) : undefined,
+      past_achievements: pastAchievements.trim() || undefined,
+      bio: bio.trim() || undefined,
+      gender,
+      payment_method: paymentMethod,
+      payment_status: computedPaymentStatus,
+      transaction_id: transactionId.trim() || undefined,
+      payment_amount: REGISTRATION_ENTRY_FEE,
+      payment_receipt_url: paymentReceiptUrl || undefined,
+      created_at: new Date().toISOString(),
+    };
+
+    try {
+      // 1. Direct insert to Supabase players table
+      const targetTournaments = tournamentId === 'all' ? ['kapl-3-mens', 'kapl-3-womens'] : [tournamentId];
+      for (const tId of targetTournaments) {
+        const idForTourn = tId === 'kapl-3-womens' ? `${playerId}_w` : playerId;
+        const { error: insertError } = await supabase.from('players').insert({
+          id: idForTourn,
+          name: newPlayer.name,
+          photo_url: newPlayer.photo_url,
+          role: newPlayer.role,
+          batting_style: newPlayer.batting_style,
+          bowling_style: newPlayer.bowling_style,
+          jersey_number: newPlayer.jersey_number,
+          mobile_number: newPlayer.mobile_number,
+          email: newPlayer.email,
+          experience: newPlayer.experience,
+          previous_team: newPlayer.previous_team,
+          payment_method: newPlayer.payment_method,
+          payment_status: newPlayer.payment_status,
+          transaction_id: newPlayer.transaction_id,
+          tournament_id: tId,
+          base_price: 100,
+        });
+        if (insertError) {
+          throw new Error(`Failed to insert player for ${tId}: ${insertError.message}`);
+        }
+      }
+
+      // 2. Local storage persistence
+      try {
+        const existingRaw = localStorage.getItem('portal_registered_players');
+        const list: Player[] = existingRaw ? JSON.parse(existingRaw) : [];
+        list.unshift(newPlayer);
+        localStorage.setItem('portal_registered_players', JSON.stringify(list));
+      } catch {}
+
+      setNewlyRegisteredPlayer(newPlayer);
+      setRegisteredSuccess(true);
+
+      // Trigger Confetti
+      try {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 },
+          colors: ['#F59E0B', '#FBBF24', '#10B981', '#06B6D4'],
+        });
+      } catch {}
+
+      // Refresh list
+      await fetchRegisteredPlayers();
+    } catch (err) {
+      console.error('Registration failed:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Reset for another registration
+  const handleRegisterAnother = () => {
+    setRegisteredSuccess(false);
+    setNewlyRegisteredPlayer(null);
+    setFullName('');
+    setPhone('');
+    setEmail('');
+    setJerseyNumber('');
+    setPhotoUrl('');
+    setBio('');
+    setTransactionId('');
+    setPaymentReceiptUrl('');
+    setPaymentReceiptName('');
+    setActiveTab('register');
+  };
+
+  // Export to CSV
+  const handleExportCsv = () => {
+    if (registeredPlayers.length === 0) return;
+    const headers = ['Player ID', 'Name', 'Role', 'Jersey Number', 'Batting', 'Bowling', 'Tournament', 'Payment Status', 'Registered At'];
+    const rows = registeredPlayers.map((p) => [
+      p.id,
+      `"${p.name.replace(/"/g, '""')}"`,
+      p.role,
+      p.jersey_number || '-',
+      p.batting_style || '-',
+      p.bowling_style || '-',
+      p.tournament_id || '-',
+      p.payment_status || 'paid',
+      p.created_at || '-',
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Registered_Players_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Filtered Roster
+  const filteredRoster = useMemo(() => {
+    return registeredPlayers.filter((p) => {
+      if (rosterSearch.trim()) {
+        const q = rosterSearch.toLowerCase().trim();
+        const matchesName = p.name?.toLowerCase().includes(q);
+        const matchesJersey = p.jersey_number && String(p.jersey_number).includes(q);
+        const matchesId = p.id?.toLowerCase().includes(q);
+        if (!matchesName && !matchesJersey && !matchesId) return false;
+      }
+      if (rosterRoleFilter !== 'all' && p.role !== rosterRoleFilter) return false;
+      if (rosterTournamentFilter !== 'all') {
+        if (p.tournament_id && p.tournament_id !== 'all' && p.tournament_id !== rosterTournamentFilter) return false;
+      }
+      return true;
+    });
+  }, [registeredPlayers, rosterSearch, rosterRoleFilter, rosterTournamentFilter]);
+
+  // Role badges helper
+  const getRoleBadge = (r: PlayerRole | string) => {
+    switch (r) {
+      case 'batter':
+        return { label: 'Batter', icon: '🏏', cls: 'bg-blue-500/20 text-blue-300 border-blue-500/40' };
+      case 'bowler':
+        return { label: 'Bowler', icon: '⚡', cls: 'bg-purple-500/20 text-purple-300 border-purple-500/40' };
+      case 'wicket_keeper':
+        return { label: 'Wicket-Keeper', icon: '🧤', cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' };
+      case 'all_rounder':
+      default:
+        return { label: 'All-Rounder', icon: '👑', cls: 'bg-amber-500/20 text-amber-300 border-amber-500/40' };
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#080B12] text-slate-100 flex flex-col font-sans">
+      {/* Top Navbar */}
+      <header className="sticky top-0 z-50 bg-[#0E1320]/90 backdrop-blur-xl border-b border-white/[0.08] shadow-lg">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-xl shadow-lg shadow-amber-500/20 border border-amber-300/40">
+              🏏
+            </div>
+            <div>
+              <span className="text-base sm:text-lg font-black font-display tracking-tight text-white flex items-center gap-1.5">
+                PREMIER LEAGUE <span className="text-gradient-gold">3.0</span>
+              </span>
+              <span className="text-[10px] text-emerald-400 font-semibold tracking-wide flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Supabase Connected • Live Registration Portal
+              </span>
+            </div>
+          </div>
+
+          {/* Navigation Pill Switcher */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('register')}
+              className={cn(
+                'flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all',
+                activeTab === 'register'
+                  ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                  : 'text-slate-300 hover:text-white hover:bg-white/[0.05]'
+              )}
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Register</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('roster')}
+              className={cn(
+                'flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all',
+                activeTab === 'roster'
+                  ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20'
+                  : 'text-slate-300 hover:text-white hover:bg-white/[0.05]'
+              )}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Roster ({registeredPlayers.length})</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-br from-[#121624] via-[#0E1320] to-[#080B12] p-6 sm:p-8 shadow-2xl shadow-amber-500/10 mb-8">
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="space-y-3 max-w-2xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  KAPL 3.0 THEME • MEGA AUCTION DRAFT
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  {registeredPlayers.length} PLAYERS REGISTERED
+                </span>
+              </div>
+
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black font-display tracking-tight text-white">
+                Player <span className="text-gradient-gold">Registration</span> & Payment Portal
+              </h1>
+
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                Official tournament player registration with UPI scan & pay option. All registered players are saved to Supabase and immediately visible in the live tournament roster.
+              </p>
+            </div>
+
+            {/* Quick Summary Pill Card */}
+            <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/[0.03] border border-white/10 shrink-0 text-xs">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-slate-400">Tournament Base Price</span>
+                <span className="font-bold text-amber-400">₹100</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-slate-400">Registration Entry Fee</span>
+                <span className="font-bold text-emerald-400">₹500 (Jersey Included)</span>
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-slate-400">Payment Option</span>
+                <span className="font-bold text-slate-200">UPI QR / Cash on Venue</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ------------------------------------------------------------- */}
+        {/* POST-REGISTRATION SUCCESS CONFIRMATION + ALL PLAYERS VISIBLE */}
+        {/* ------------------------------------------------------------- */}
+        {registeredSuccess && (
+          <div className="space-y-8 animate-in fade-in duration-300 mb-12">
+            <div className="relative overflow-hidden rounded-3xl border-2 border-emerald-500/50 bg-gradient-to-b from-[#0F1E1B] via-[#0D1619] to-[#080B12] p-6 sm:p-10 text-center space-y-6 shadow-2xl shadow-emerald-500/20">
+              <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-black shadow-xl shadow-emerald-500/30 border border-emerald-300 animate-bounce">
+                <CheckCircle2 className="w-12 h-12 text-black" />
+              </div>
+
+              <div className="space-y-2 max-w-xl mx-auto">
+                <span className="inline-block px-3.5 py-1 rounded-full text-xs uppercase tracking-wider font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  ✓ REGISTRATION CONFIRMED & SAVED TO SUPABASE
+                </span>
+                <h2 className="text-3xl sm:text-4xl font-black font-display text-white">
+                  Welcome to the League, <span className="text-gradient-gold">{fullName}</span>!
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  Your registration has been stored in Supabase. You can now see yourself along with all registered players in the tournament roster below!
+                </p>
+              </div>
+
+              {/* Player Trading Pass Snapshot */}
+              <div className="max-w-md mx-auto p-4 rounded-2xl bg-white/[0.04] border border-white/10 text-left flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+                  {photoUrl ? (
+                    <img src={photoUrl} alt={fullName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-3xl">{getRoleBadge(role).icon}</span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-bold text-white text-base truncate">{fullName}</h4>
+                    <span className={cn('text-[10px] uppercase font-bold px-2 py-0.5 rounded-lg border', getRoleBadge(role).cls)}>
+                      {role.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Jersey #{jerseyNumber || '-'} • Base Price: ₹100 • {tournamentId === 'kapl-3-womens' ? "Women's League" : "Men's League"}
+                  </p>
+                  <div className="pt-0.5">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                      Payment: {paymentMethod === 'cash' ? 'Cash on Match Day' : 'UPI Submitted'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <button
+                  onClick={handleRegisterAnother}
+                  className="h-12 px-6 rounded-2xl font-bold bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-black shadow-lg shadow-amber-500/20 hover:opacity-95 flex items-center gap-2"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Register Another Player
+                </button>
+                <button
+                  onClick={handleExportCsv}
+                  className="h-12 px-6 rounded-2xl font-bold border border-white/15 bg-white/[0.04] text-white hover:bg-white/[0.08] flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4 text-amber-400" />
+                  Download Roster (CSV)
+                </button>
+              </div>
+            </div>
+
+            {/* Transition banner to all players */}
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">👥</span>
+                <div>
+                  <h4 className="text-sm font-bold text-white">All Registered Players Roster</h4>
+                  <p className="text-xs text-slate-400">All registered players from Supabase are listed below.</p>
+                </div>
+              </div>
+              <span className="text-xs font-bold text-amber-300 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40">
+                {registeredPlayers.length} Total Registered
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* ------------------------------------------------------------- */}
+        {/* REGISTRATION FORM + LIVE CARD PREVIEW (activeTab === 'register') */}
+        {/* ------------------------------------------------------------- */}
+        {activeTab === 'register' && !registeredSuccess && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-12">
+            {/* Form Column */}
+            <div className="lg:col-span-7 space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* 1. Tournament Division */}
+                <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-6 space-y-4">
+                  <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
+                    <Trophy className="w-5 h-5" />
+                    <span>1. Tournament League</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      { id: 'kapl-3-mens', label: "Men's League", icon: '🏏', desc: 'Premier Mens Draft' },
+                      { id: 'kapl-3-womens', label: "Women's League", icon: '👑', desc: 'Premier Womens Draft' },
+                      { id: 'all', label: 'Dual Draft', icon: '⚡', desc: 'Both League Pools' },
+                    ].map((div) => (
+                      <div
+                        key={div.id}
+                        onClick={() => setTournamentId(div.id)}
+                        className={cn(
+                          'p-4 rounded-2xl border cursor-pointer transition-all text-center space-y-1',
+                          tournamentId === div.id
+                            ? 'border-amber-500 bg-amber-500/15 shadow-md shadow-amber-500/10 ring-2 ring-amber-500/30'
+                            : 'border-white/10 bg-white/[0.02] hover:border-white/20'
+                        )}
+                      >
+                        <span className="text-2xl">{div.icon}</span>
+                        <h4 className="text-sm font-bold text-white">{div.label}</h4>
+                        <p className="text-[11px] text-slate-400">{div.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. Personal & Contact Details */}
+                <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-6 space-y-4">
+                  <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
+                    <User className="w-5 h-5" />
+                    <span>2. Player Information</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-200">
+                        Full Name <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        placeholder="e.g. Virat Sharma"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400', errors.fullName && 'border-red-500')}
+                      />
+                      {errors.fullName && <p className="text-xs text-red-400">{errors.fullName}</p>}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-200">
+                        Mobile / WhatsApp Number <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        placeholder="10-digit mobile number"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400', errors.phone && 'border-red-500')}
+                      />
+                      {errors.phone && <p className="text-xs text-red-400">{errors.phone}</p>}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-200">Email Address (Optional)</label>
+                      <input
+                        type="email"
+                        placeholder="name@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400', errors.email && 'border-red-500')}
+                      />
+                      {errors.email && <p className="text-xs text-red-400">{errors.email}</p>}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-200">Preferred Jersey Number</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="99"
+                        placeholder="e.g. 7, 18, 45"
+                        value={jerseyNumber}
+                        onChange={(e) => setJerseyNumber(e.target.value)}
+                        className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Playing Role & Style */}
+                <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-6 space-y-4">
+                  <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
+                    <Flame className="w-5 h-5" />
+                    <span>3. Playing Role & Style</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-200">Primary Playing Role</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                      {[
+                        { id: 'batter', label: 'Batter', icon: '🏏' },
+                        { id: 'bowler', label: 'Bowler', icon: '⚡' },
+                        { id: 'all_rounder', label: 'All-Rounder', icon: '👑' },
+                        { id: 'wicket_keeper', label: 'Wicket-Keeper', icon: '🧤' },
+                      ].map((item) => (
+                        <div
+                          key={item.id}
+                          onClick={() => setRole(item.id as PlayerRole)}
+                          className={cn(
+                            'p-3 rounded-2xl border cursor-pointer transition-all text-center space-y-1',
+                            role === item.id
+                              ? 'border-amber-500 bg-amber-500/15 shadow-sm ring-2 ring-amber-500/30'
+                              : 'border-white/10 bg-white/[0.02] hover:border-white/20'
+                          )}
+                        >
+                          <span className="text-2xl">{item.icon}</span>
+                          <h5 className="text-xs font-bold text-white">{item.label}</h5>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-200">Batting Style</label>
+                      <select
+                        value={battingStyle}
+                        onChange={(e) => setBattingStyle(e.target.value)}
+                        className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                      >
+                        <option value="Right-hand bat" className="bg-[#0E1320]">Right-hand bat</option>
+                        <option value="Left-hand bat" className="bg-[#0E1320]">Left-hand bat</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-200">Bowling Style</label>
+                      <select
+                        value={bowlingStyle}
+                        onChange={(e) => setBowlingStyle(e.target.value)}
+                        className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                      >
+                        <option value="Right-arm medium" className="bg-[#0E1320]">Right-arm fast / medium</option>
+                        <option value="Right-arm fast" className="bg-[#0E1320]">Right-arm express fast</option>
+                        <option value="Right-arm off spin" className="bg-[#0E1320]">Right-arm off spin</option>
+                        <option value="Right-arm leg spin" className="bg-[#0E1320]">Right-arm leg spin</option>
+                        <option value="Left-arm medium" className="bg-[#0E1320]">Left-arm fast / medium</option>
+                        <option value="Left-arm orthodox" className="bg-[#0E1320]">Left-arm orthodox spin</option>
+                        <option value="None / Occasional" className="bg-[#0E1320]">None / Occasional</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Experience & Previous Team */}
+                <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-6 space-y-4">
+                  <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
+                    <Award className="w-5 h-5" />
+                    <span>4. Experience & Previous Team</span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-200">Playing Experience</label>
+                    <select
+                      value={experience}
+                      onChange={(e) => setExperience(e.target.value)}
+                      className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                    >
+                      <option value="new" className="bg-[#0E1320]">New to Cricket</option>
+                      <option value="casual" className="bg-[#0E1320]">Casual / Occasional Player</option>
+                      <option value="semi_professional" className="bg-[#0E1320]">Semi-Professional</option>
+                      <option value="professional" className="bg-[#0E1320]">Professional</option>
+                    </select>
+                  </div>
+
+                  {experience !== 'new' && (
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-200">Previous Team / Franchise</label>
+                      <select
+                        value={previousTeam}
+                        onChange={(e) => setPreviousTeam(e.target.value)}
+                        className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                      >
+                        <option value="" className="bg-[#0E1320]">Select a team...</option>
+                        {PREVIOUS_TEAMS.map((team) => (
+                          <option key={team} value={team} className="bg-[#0E1320]">
+                            {team}
+                          </option>
+                        ))}
+                      </select>
+
+                      {previousTeam === 'Other / Custom Franchise' && (
+                        <input
+                          placeholder="Enter your custom team name"
+                          value={customPreviousTeam}
+                          onChange={(e) => setCustomPreviousTeam(e.target.value)}
+                          className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-200">Past Achievements (Optional)</label>
+                    <textarea
+                      placeholder="E.g., Tournament wins, awards, notable performances..."
+                      value={pastAchievements}
+                      onChange={(e) => setPastAchievements(e.target.value)}
+                      rows={2}
+                      className="w-full rounded-xl bg-black/40 border border-white/10 p-3 text-sm text-white focus:outline-none focus:border-amber-400 resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* 5. Photo & Bio */}
+                <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-6 space-y-4">
+                  <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
+                    <Sparkles className="w-5 h-5" />
+                    <span>5. Profile Avatar & Bio</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-200">Choose Preset Avatar</label>
+                    <div className="flex flex-wrap gap-2">
+                      {AVATAR_PRESETS.map((preset) => (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => setPhotoUrl(preset.url)}
+                          className={cn(
+                            'flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all',
+                            photoUrl === preset.url
+                              ? 'border-amber-400 bg-amber-500/20 text-amber-300'
+                              : 'border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/20'
+                          )}
+                        >
+                          <img src={preset.url} alt={preset.label} className="w-5 h-5 rounded-full object-cover" />
+                          <span>{preset.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-200">Or Custom Photo URL</label>
+                    <input
+                      placeholder="https://example.com/photo.jpg"
+                      value={photoUrl}
+                      onChange={(e) => setPhotoUrl(e.target.value)}
+                      className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-200">Player Bio / Motto (Optional)</label>
+                    <textarea
+                      placeholder="Share your cricketing strengths and goals..."
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      rows={2}
+                      className="w-full rounded-xl bg-black/40 border border-white/10 p-3 text-sm text-white focus:outline-none focus:border-amber-400 resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* 6. PAYMENT & SCANNER SECTION (Special Requirement) */}
+                <div className="rounded-3xl border-2 border-amber-500/40 bg-gradient-to-b from-[#151926] to-[#0A0D15] p-6 space-y-5 shadow-xl shadow-amber-500/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
+                      <CreditCard className="w-5 h-5" />
+                      <span>6. Registration Fee & Payment Scanner</span>
+                    </div>
+                    <span className="text-xs font-black px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                      ₹{REGISTRATION_ENTRY_FEE} ENTRY FEE
+                    </span>
+                  </div>
+
+                  {/* Fee Banner */}
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                    <div>
+                      <h4 className="font-bold text-amber-300">Tournament Player Registration Kit</h4>
+                      <p className="text-slate-400 mt-0.5">
+                        Includes customized team jersey with your preferred number, match balls, and Mega Auction draft entry.
+                      </p>
+                    </div>
+                    <span className="text-xl font-black text-amber-400 shrink-0">₹{REGISTRATION_ENTRY_FEE}</span>
+                  </div>
+
+                  {/* QR Scanner Display Container */}
+                  <div className="p-5 rounded-3xl bg-black/60 border border-amber-500/30 text-center space-y-4">
+                    <div className="flex items-center justify-between px-1">
+                      <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                        <QrCode className="w-4 h-4 text-amber-400" />
+                        OFFICIAL PAYMENT QR SCANNER
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
+                        UPI Scan & Pay
+                      </span>
+                    </div>
+
+                    {/* QR Scanner Frame with Laser Scanline */}
+                    <div className="relative mx-auto w-56 h-56 sm:w-64 sm:h-64 rounded-3xl p-3 bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 shadow-2xl shadow-amber-500/25 border border-amber-300/40 flex items-center justify-center">
+                      <div className="relative w-full h-full rounded-2xl overflow-hidden bg-white p-2 flex items-center justify-center">
+                        {/* Laser Scan line */}
+                        <div className="animate-scanline inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent shadow-lg shadow-amber-500 pointer-events-none z-10" />
+
+                        <img
+                          src={scannerImgError ? PLACEHOLDER_SCANNER_SVG : OFFICIAL_SCANNER_IMG}
+                          alt="Official Tournament Scanner"
+                          className="w-full h-full object-contain"
+                          onError={() => setScannerImgError(true)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Scanner note */}
+                    <div className="max-w-md mx-auto p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/90 text-left space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-amber-300">
+                        <Smartphone className="w-3.5 h-3.5" />
+                        Scanner Information
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        Official scanner is active above. When you provide your official QR scanner image later, it will immediately display in this slot. You can also transfer directly to the official UPI ID below.
+                      </p>
+                    </div>
+
+                    {/* UPI ID Strip */}
+                    <div className="max-w-md mx-auto flex items-center justify-between p-3 rounded-2xl bg-white/[0.04] border border-white/10">
+                      <div className="text-left">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block">Tournament UPI ID</span>
+                        <span className="text-sm font-black text-white font-mono">{OFFICIAL_UPI_ID}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCopyUpi}
+                        className="h-9 px-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 text-xs font-bold flex items-center gap-1.5"
+                      >
+                        {copiedUpi ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            Copy UPI ID
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400">
+                      Google Pay • PhonePe • Paytm • BHIM • Cred • Any Bank App
+                    </p>
+                  </div>
+
+                  {/* Payment Method Selector */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-200">Select Payment Option</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      {[
+                        { id: 'upi_qr' as PaymentMethod, label: 'UPI QR / App', desc: 'Scan & enter UTR', icon: '⚡' },
+                        { id: 'cash' as PaymentMethod, label: 'Cash on Venue', desc: 'Pay on match day', icon: '💵' },
+                        { id: 'bank_transfer' as PaymentMethod, label: 'Bank Transfer', desc: 'IMPS / NEFT transfer', icon: '🏦' },
+                      ].map((item) => (
+                        <div
+                          key={item.id}
+                          onClick={() => setPaymentMethod(item.id)}
+                          className={cn(
+                            'p-3.5 rounded-2xl border cursor-pointer transition-all space-y-1',
+                            paymentMethod === item.id
+                              ? 'border-amber-500 bg-amber-500/15 shadow-sm ring-2 ring-amber-500/30'
+                              : 'border-white/10 bg-white/[0.02] hover:border-white/20'
+                          )}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-lg">{item.icon}</span>
+                            {paymentMethod === item.id && <Check className="w-4 h-4 text-amber-400" />}
+                          </div>
+                          <h5 className="text-xs font-bold text-white">{item.label}</h5>
+                          <p className="text-[10px] text-slate-400">{item.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Transaction ID & Screenshot for UPI */}
+                  {paymentMethod !== 'cash' ? (
+                    <div className="space-y-4 pt-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-200">UPI / UTR Transaction Reference</label>
+                          <input
+                            placeholder="e.g. 431289456723 (12-digit UTR)"
+                            value={transactionId}
+                            onChange={(e) => setTransactionId(e.target.value)}
+                            className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                          />
+                          <p className="text-[11px] text-slate-400">Available in your GPay / PhonePe payment screen</p>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-200">Account Holder Name</label>
+                          <input
+                            placeholder="Name on bank / UPI account"
+                            value={payerName}
+                            onChange={(e) => setPayerName(e.target.value)}
+                            className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Screenshot upload */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-200">Payment Screenshot / Receipt (Optional)</label>
+                        {paymentReceiptUrl ? (
+                          <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
+                            <div className="flex items-center gap-3">
+                              <img src={paymentReceiptUrl} alt="Receipt thumbnail" className="w-12 h-12 rounded-xl object-cover border border-white/20" />
+                              <div>
+                                <p className="text-xs font-bold text-white truncate max-w-[200px]">{paymentReceiptName || 'receipt.png'}</p>
+                                <span className="text-[10px] text-emerald-400 font-semibold">Screenshot Attached ✓</span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPaymentReceiptUrl('');
+                                setPaymentReceiptName('');
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-400"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.02] hover:bg-white/[0.04] hover:border-amber-500/40 transition-colors cursor-pointer text-center space-y-1">
+                            <Upload className="w-5 h-5 text-amber-400" />
+                            <span className="text-xs font-bold text-white">Upload Payment Screenshot</span>
+                            <span className="text-[10px] text-slate-400">PNG, JPG or WebP</span>
+                            <input type="file" accept="image/*" onChange={handleReceiptUpload} className="hidden" />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-left space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-emerald-300 text-xs">
+                        <CheckCircle2 className="w-4 h-4" />
+                        Cash on Venue Selected
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        Pay the ₹500 fee at the tournament desk on match day to collect your kit and jersey.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full h-14 text-base font-black rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-black shadow-xl shadow-amber-500/25 hover:from-amber-600 hover:to-yellow-600 transition-all flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      Saving to Supabase Database...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-5 h-5" />
+                      Complete Registration & Enter Tournament Draft
+                      <ArrowRight className="w-5 h-5 ml-1" />
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+
+            {/* Live Trading Card Preview Column */}
+            <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-24">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  LIVE OFFICIAL PLAYER CARD
+                </span>
+                <span className="text-[10px] uppercase font-mono tracking-wider border border-amber-500/30 text-amber-300 px-2 py-0.5 rounded-full">
+                  KAPL 3.0 TRADING PASS
+                </span>
+              </div>
+
+              {/* Trading Card */}
+              <div className="relative overflow-hidden rounded-3xl border-2 border-amber-400/50 bg-gradient-to-b from-[#121624] via-[#0E1320] to-black p-6 shadow-2xl shadow-amber-500/20 text-center space-y-5">
+                {/* Corners */}
+                <div className="absolute top-3 left-3">
+                  <span className="bg-amber-500 text-black font-black text-[10px] px-2 py-0.5 rounded-full shadow-sm">
+                    ₹100 BASE
+                  </span>
+                </div>
+                <div className="absolute top-3 right-3 font-mono text-xs font-black text-amber-300">
+                  #{jerseyNumber || '??'}
+                </div>
+
+                {/* Avatar */}
+                <div className="relative mx-auto w-32 h-32 rounded-3xl p-1 bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-600 shadow-xl shadow-amber-500/25 mt-2">
+                  <div className="w-full h-full rounded-[22px] overflow-hidden bg-neutral-900 flex items-center justify-center">
+                    {photoUrl ? (
+                      <img src={photoUrl} alt={fullName || 'Player'} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-5xl">{getRoleBadge(role).icon}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Name & Role */}
+                <div className="space-y-1">
+                  <h3 className="text-2xl font-black font-display text-white tracking-tight truncate">
+                    {fullName || 'Player Name'}
+                  </h3>
+                  <div className="flex flex-wrap items-center justify-center gap-1.5">
+                    <span className={cn('text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-lg border', getRoleBadge(role).cls)}>
+                      {getRoleBadge(role).icon} {role.replace('_', ' ')}
+                    </span>
+                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/40">
+                      {tournamentId === 'kapl-3-womens' ? "Women's League" : "Men's League"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Skills Grid */}
+                <div className="grid grid-cols-2 gap-2 text-left pt-2 border-t border-white/10 text-xs">
+                  <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Batting</span>
+                    <span className="font-semibold text-white truncate block">{battingStyle}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Bowling</span>
+                    <span className="font-semibold text-white truncate block">{bowlingStyle}</span>
+                  </div>
+                </div>
+
+                {/* Payment summary pill */}
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-left flex items-center justify-between text-xs">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-emerald-400 block">Entry Fee</span>
+                    <span className="font-bold text-white">₹{REGISTRATION_ENTRY_FEE} • {paymentMethod === 'cash' ? 'Cash on Venue' : 'UPI Payment'}</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
+                    {transactionId ? 'UTR Attached ✓' : paymentMethod === 'cash' ? 'Pay on Venue' : 'Payment Ready'}
+                  </span>
+                </div>
+
+                <div className="pt-1 text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Real-time Supabase sync & live auction pool</span>
+                </div>
+              </div>
+
+              {/* View roster CTA */}
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.08] flex items-center justify-between text-xs">
+                <div>
+                  <h5 className="font-bold text-white">View Existing Players</h5>
+                  <p className="text-slate-400">{registeredPlayers.length} players registered in database</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('roster')}
+                  className="px-3.5 py-2 rounded-xl border border-white/15 bg-white/[0.04] text-white hover:bg-white/[0.08] font-bold flex items-center gap-1.5"
+                >
+                  <Users className="w-3.5 h-3.5 text-emerald-400" />
+                  View Roster
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ------------------------------------------------------------- */}
+        {/* ALL REGISTERED PLAYERS ROSTER VIEW (Tab 'roster' or on success) */}
+        {/* ------------------------------------------------------------- */}
+        {(activeTab === 'roster' || registeredSuccess) && (
+          <div className="space-y-6 pt-2 animate-in fade-in duration-300">
+            {/* Header Strip */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-3xl bg-[#0E1320]/80 border border-white/[0.08] backdrop-blur-xl">
+              <div>
+                <h3 className="text-xl sm:text-2xl font-black font-display text-white flex items-center gap-2">
+                  <Users className="w-5 h-5 text-amber-400" />
+                  All Registered Players <span className="text-gradient-gold">({registeredPlayers.length})</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Live tournament roster loaded directly from Supabase. Newly registered players appear immediately.
+                </p>
+              </div>
+
+              {/* View mode & Refresh */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center bg-white/[0.04] p-1 rounded-xl border border-white/10">
+                  <button
+                    onClick={() => setRosterViewMode('grid')}
+                    className={cn(
+                      'p-2 rounded-lg text-xs font-bold transition-colors',
+                      rosterViewMode === 'grid' ? 'bg-amber-500 text-black' : 'text-slate-400 hover:text-white'
+                    )}
+                    title="Grid View"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setRosterViewMode('table')}
+                    className={cn(
+                      'p-2 rounded-lg text-xs font-bold transition-colors',
+                      rosterViewMode === 'table' ? 'bg-amber-500 text-black' : 'text-slate-400 hover:text-white'
+                    )}
+                    title="Table View"
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => fetchRegisteredPlayers()}
+                  className="h-10 px-3.5 rounded-xl border border-white/10 bg-white/[0.03] text-xs font-bold text-slate-200 hover:bg-white/[0.06] flex items-center gap-1.5"
+                >
+                  <RefreshCw className={cn('w-3.5 h-3.5 text-amber-400', isLoadingRoster && 'animate-spin')} />
+                  Refresh
+                </button>
+
+                <button
+                  onClick={handleExportCsv}
+                  className="h-10 px-3.5 rounded-xl border border-white/10 bg-white/[0.03] text-xs font-bold text-slate-200 hover:bg-white/[0.06] flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-400" />
+                  Export CSV
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Bar */}
+            <div className="p-4 rounded-2xl bg-[#0E1320]/60 border border-white/[0.08] space-y-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 absolute left-3 top-3.5 text-slate-400 pointer-events-none" />
+                  <input
+                    placeholder="Search by player name or jersey number..."
+                    value={rosterSearch}
+                    onChange={(e) => setRosterSearch(e.target.value)}
+                    className="w-full rounded-xl bg-black/40 border border-white/10 pl-9 pr-8 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                  />
+                  {rosterSearch && (
+                    <button onClick={() => setRosterSearch('')} className="absolute right-3 top-3.5 text-slate-400 hover:text-white">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Role Chips */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {[
+                    { id: 'all', label: 'All Roles' },
+                    { id: 'all_rounder', label: '👑 All-Rounders' },
+                    { id: 'batter', label: '🏏 Batters' },
+                    { id: 'bowler', label: '⚡ Bowlers' },
+                    { id: 'wicket_keeper', label: '🧤 Keepers' },
+                  ].map((chip) => (
+                    <button
+                      key={chip.id}
+                      onClick={() => setRosterRoleFilter(chip.id)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
+                        rosterRoleFilter === chip.id
+                          ? 'bg-amber-500 text-black shadow-sm'
+                          : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
+                      )}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Tournament Filter Chips */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {[
+                    { id: 'all', label: 'All Tournaments' },
+                    { id: 'kapl-3-mens', label: "🏆 Men's League" },
+                    { id: 'kapl-3-womens', label: "🏆 Women's League" },
+                  ].map((chip) => (
+                    <button
+                      key={chip.id}
+                      onClick={() => setRosterTournamentFilter(chip.id)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
+                        rosterTournamentFilter === chip.id
+                          ? 'bg-emerald-500 text-black shadow-sm'
+                          : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
+                      )}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Players Grid or Table */}
+            {isLoadingRoster && registeredPlayers.length === 0 ? (
+              <div className="py-16 text-center space-y-3">
+                <div className="w-10 h-10 border-3 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                <p className="text-sm font-semibold text-slate-300">Loading players from Supabase...</p>
+              </div>
+            ) : filteredRoster.length === 0 ? (
+              <div className="py-16 text-center space-y-3 rounded-3xl border border-white/10 bg-[#0E1320]/40 p-8">
+                <span className="text-4xl">🏏</span>
+                <h4 className="text-lg font-bold text-white">No Players Found</h4>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  {rosterSearch ? `No players matched "${rosterSearch}".` : 'No players registered yet.'}
+                </p>
+              </div>
+            ) : rosterViewMode === 'grid' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredRoster.map((player) => {
+                  const isNewlyRegistered = newlyRegisteredPlayer && player.id === newlyRegisteredPlayer.id;
+
+                  return (
+                    <div
+                      key={player.id}
+                      className={cn(
+                        'relative overflow-hidden rounded-3xl border p-4.5 transition-all flex flex-col justify-between space-y-3',
+                        isNewlyRegistered
+                          ? 'border-2 border-amber-400 bg-gradient-to-b from-amber-500/15 via-[#161C2E] to-[#0E1320] shadow-xl shadow-amber-500/20 ring-2 ring-amber-400/40'
+                          : 'border-white/[0.08] bg-[#0E1320]/80 hover:border-amber-500/30 hover:bg-[#0E1320]'
+                      )}
+                    >
+                      {isNewlyRegistered && (
+                        <div className="absolute top-2.5 right-2.5">
+                          <span className="bg-amber-400 text-black font-black text-[10px] px-2 py-0.5 rounded-full animate-pulse shadow-sm">
+                            ⭐ YOU (JUST REGISTERED)
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex items-start gap-3">
+                        <div className="w-12 h-12 rounded-2xl overflow-hidden bg-neutral-900 border border-white/15 flex items-center justify-center shrink-0">
+                          {player.photo_url ? (
+                            <img src={player.photo_url} alt={player.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-2xl">{getRoleBadge(player.role).icon}</span>
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <h4 className="font-bold text-white text-sm truncate">{player.name}</h4>
+                            {player.jersey_number && (
+                              <span className="text-[11px] font-mono font-black text-amber-400">#{player.jersey_number}</span>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                            <span className={cn('text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg border', getRoleBadge(player.role).cls)}>
+                              {getRoleBadge(player.role).icon} {player.role?.replace('_', ' ')}
+                            </span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-lg border border-white/10 text-slate-400">
+                              {player.tournament_id === 'kapl-3-womens' ? "Women's" : "Men's"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-1.5 text-left pt-1 border-t border-white/[0.06] text-[11px]">
+                        <div className="p-2 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                          <span className="text-[9px] uppercase font-bold text-slate-400 block">Batting</span>
+                          <span className="font-medium text-white truncate block">{player.batting_style || 'Right-hand'}</span>
+                        </div>
+                        <div className="p-2 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                          <span className="text-[9px] uppercase font-bold text-slate-400 block">Bowling</span>
+                          <span className="font-medium text-white truncate block">{player.bowling_style || 'None'}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-white/[0.06] text-[10px]">
+                        <span className="text-emerald-400 font-bold flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          {player.payment_status === 'cash_venue' ? 'Cash on Venue' : 'Paid & Verified'}
+                        </span>
+                        <span className="font-mono text-slate-400">
+                          {player.created_at ? new Date(player.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : 'Verified'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Table View */
+              <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 overflow-hidden shadow-xl">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-white/[0.04] border-b border-white/[0.08] text-slate-400 uppercase text-[10px] font-black tracking-wider">
+                      <tr>
+                        <th className="py-3 px-4">Player</th>
+                        <th className="py-3 px-3">Role</th>
+                        <th className="py-3 px-3">Jersey #</th>
+                        <th className="py-3 px-3">Batting</th>
+                        <th className="py-3 px-3">Bowling</th>
+                        <th className="py-3 px-3">League</th>
+                        <th className="py-3 px-3">Payment</th>
+                        <th className="py-3 px-4">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.05]">
+                      {filteredRoster.map((player) => (
+                        <tr key={player.id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="py-3 px-4 font-bold text-white flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg overflow-hidden bg-white/10 flex items-center justify-center shrink-0">
+                              {player.photo_url ? (
+                                <img src={player.photo_url} alt={player.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-xs">{getRoleBadge(player.role).icon}</span>
+                              )}
+                            </div>
+                            <span>{player.name}</span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-lg border', getRoleBadge(player.role).cls)}>
+                              {player.role?.replace('_', ' ')}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 font-mono font-black text-amber-400">
+                            {player.jersey_number ? `#${player.jersey_number}` : '-'}
+                          </td>
+                          <td className="py-3 px-3 text-slate-300">{player.batting_style || 'Right-hand bat'}</td>
+                          <td className="py-3 px-3 text-slate-300">{player.bowling_style || 'None'}</td>
+                          <td className="py-3 px-3 text-slate-300">{player.tournament_id === 'kapl-3-womens' ? "Women's" : "Men's"}</td>
+                          <td className="py-3 px-3 text-emerald-400 font-semibold">
+                            {player.payment_status === 'cash_venue' ? 'Cash on Venue' : 'Paid & Verified'}
+                          </td>
+                          <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">
+                            {player.created_at ? new Date(player.created_at).toLocaleDateString('en-IN') : 'Verified'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-white/[0.06] bg-[#0E1320] py-6 text-center text-xs text-slate-500">
+        <p>Premier League 3.0 • Official Player Registration & Live Roster Portal • Connected to Supabase</p>
+      </footer>
+    </div>
+  );
+}
+
