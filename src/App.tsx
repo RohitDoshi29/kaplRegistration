@@ -259,11 +259,48 @@ export default function App() {
     const file = e.target.files?.[0];
     if (!file) return;
     setPaymentReceiptName(file.name);
+    setErrors((prev) => {
+      const updated = { ...prev };
+      delete updated.paymentReceipt;
+      return updated;
+    });
+
     const reader = new FileReader();
     reader.onload = (event) => {
-      if (event.target?.result) {
-        setPaymentReceiptUrl(event.target.result as string);
-      }
+      const dataUrl = event.target?.result as string;
+      if (!dataUrl) return;
+
+      // Compress screenshot via canvas so uploads and storage are fast
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 1200;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.82);
+          setPaymentReceiptUrl(compressed);
+        } else {
+          setPaymentReceiptUrl(dataUrl);
+        }
+      };
+      img.onerror = () => {
+        setPaymentReceiptUrl(dataUrl);
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   };
@@ -283,6 +320,9 @@ export default function App() {
     }
     if (!transactionId.trim()) {
       errs.transactionId = 'Please enter a UTR (Transaction Reference ID)';
+    }
+    if (!paymentReceiptUrl) {
+      errs.paymentReceipt = 'Payment screenshot is required';
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -1083,7 +1123,14 @@ export default function App() {
 
                     {/* Screenshot upload */}
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-200">Payment Screenshot / Receipt (Optional)</label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-slate-200">
+                          Payment Screenshot / Receipt <span className="text-red-400">*</span>
+                        </label>
+                        <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                          Compulsory
+                        </span>
+                      </div>
                       {paymentReceiptUrl ? (
                         <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
                           <div className="flex items-center gap-3">
@@ -1105,12 +1152,21 @@ export default function App() {
                           </button>
                         </div>
                       ) : (
-                        <label className="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.02] hover:bg-white/[0.04] hover:border-amber-500/40 transition-colors cursor-pointer text-center space-y-1">
-                          <Upload className="w-5 h-5 text-amber-400" />
+                        <label className={cn(
+                          "flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed bg-white/[0.02] hover:bg-white/[0.04] transition-colors cursor-pointer text-center space-y-1",
+                          errors.paymentReceipt ? "border-red-500 bg-red-500/5 hover:border-red-400" : "border-white/15 hover:border-amber-500/40"
+                        )}>
+                          <Upload className={cn("w-5 h-5", errors.paymentReceipt ? "text-red-400" : "text-amber-400")} />
                           <span className="text-xs font-bold text-white">Upload Payment Screenshot</span>
-                          <span className="text-[10px] text-slate-400">PNG, JPG or WebP</span>
+                          <span className="text-[10px] text-slate-400">Compulsory: PNG, JPG or WebP</span>
                           <input type="file" accept="image/*" onChange={handleReceiptUpload} className="hidden" />
                         </label>
+                      )}
+                      {errors.paymentReceipt && (
+                        <p className="text-xs text-red-400 flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          {errors.paymentReceipt}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -1207,7 +1263,7 @@ export default function App() {
                     <span className="font-bold text-white">₹{REGISTRATION_ENTRY_FEE} • UPI Payment</span>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
-                    {transactionId ? 'UTR Attached ✓' : 'Payment Ready'}
+                    {transactionId && paymentReceiptUrl ? 'UTR & Screenshot ✓' : transactionId ? 'UTR Entered' : 'Payment Ready'}
                   </span>
                 </div>
 
