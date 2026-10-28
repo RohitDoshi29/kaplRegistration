@@ -34,6 +34,13 @@ import {
   List,
   X,
   Radio,
+  Eye,
+  Filter,
+  ArrowUpDown,
+  ExternalLink,
+  ChevronRight,
+  Hash,
+  Calendar,
 } from 'lucide-react';
 
 const OFFICIAL_UPI_ID = 'idb250700481480@idbi';
@@ -117,7 +124,14 @@ export default function App() {
   const [rosterSearch, setRosterSearch] = useState('');
   const [rosterRoleFilter, setRosterRoleFilter] = useState('all');
   const [rosterTournamentFilter, setRosterTournamentFilter] = useState('all');
+  const [rosterStatusFilter, setRosterStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
+  const [rosterSortBy, setRosterSortBy] = useState<'newest' | 'oldest' | 'name' | 'jersey'>('newest');
   const [rosterViewMode, setRosterViewMode] = useState<'grid' | 'table'>('grid');
+
+  // Player Detail & Lightbox Modal State
+  const [selectedPlayerModal, setSelectedPlayerModal] = useState<Player | null>(null);
+  const [expandedReceiptModal, setExpandedReceiptModal] = useState<string | null>(null);
+  const [copiedModalUtr, setCopiedModalUtr] = useState(false);
 
 
   // Fetch all registered players from Supabase
@@ -244,6 +258,31 @@ export default function App() {
       clearInterval(intervalId);
     };
   }, [fetchRegisteredPlayers]);
+
+  // Synchronize open player modal with live database updates (e.g. payment status verified in Supabase)
+  useEffect(() => {
+    if (selectedPlayerModal) {
+      const updated = registeredPlayers.find((p) => p.id === selectedPlayerModal.id);
+      if (updated) {
+        setSelectedPlayerModal(updated);
+      }
+    }
+  }, [registeredPlayers, selectedPlayerModal?.id]);
+
+  // Keyboard shortcut listener for modals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (expandedReceiptModal) {
+          setExpandedReceiptModal(null);
+        } else if (selectedPlayerModal) {
+          setSelectedPlayerModal(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [expandedReceiptModal, selectedPlayerModal]);
 
   // Copy UPI ID
   const handleCopyUpi = () => {
@@ -472,23 +511,94 @@ export default function App() {
     document.body.removeChild(link);
   };
 
-  // Filtered Roster
+  // Copy UTR inside Player Modal
+  const handleCopyModalUtr = (utr?: string) => {
+    if (!utr || !navigator?.clipboard) return;
+    navigator.clipboard.writeText(utr);
+    setCopiedModalUtr(true);
+    setTimeout(() => setCopiedModalUtr(false), 2000);
+  };
+
+  // Roster KPI Metrics
+  const rosterStats = useMemo(() => {
+    const total = registeredPlayers.length;
+    const paid = registeredPlayers.filter((p) => p.payment_status === 'paid').length;
+    const pending = total - paid;
+    const mens = registeredPlayers.filter((p) => p.tournament_id === 'kapl-3-mens' || p.tournament_id === 'all').length;
+    const womens = registeredPlayers.filter((p) => p.tournament_id === 'kapl-3-womens' || p.tournament_id === 'all').length;
+    const allRounders = registeredPlayers.filter((p) => p.role === 'all_rounder').length;
+    const batters = registeredPlayers.filter((p) => p.role === 'batter').length;
+    const bowlers = registeredPlayers.filter((p) => p.role === 'bowler').length;
+    const keepers = registeredPlayers.filter((p) => p.role === 'wicket_keeper').length;
+
+    return { total, paid, pending, mens, womens, allRounders, batters, bowlers, keepers };
+  }, [registeredPlayers]);
+
+  const hasActiveFilters = Boolean(
+    rosterSearch.trim() ||
+    rosterRoleFilter !== 'all' ||
+    rosterTournamentFilter !== 'all' ||
+    rosterStatusFilter !== 'all' ||
+    rosterSortBy !== 'newest'
+  );
+
+  const handleClearFilters = () => {
+    setRosterSearch('');
+    setRosterRoleFilter('all');
+    setRosterTournamentFilter('all');
+    setRosterStatusFilter('all');
+    setRosterSortBy('newest');
+  };
+
+  // Filtered & Sorted Roster
   const filteredRoster = useMemo(() => {
-    return registeredPlayers.filter((p) => {
+    const result = registeredPlayers.filter((p) => {
       if (rosterSearch.trim()) {
         const q = rosterSearch.toLowerCase().trim();
         const matchesName = p.name?.toLowerCase().includes(q);
         const matchesJersey = p.jersey_number && String(p.jersey_number).includes(q);
         const matchesId = p.id?.toLowerCase().includes(q);
-        if (!matchesName && !matchesJersey && !matchesId) return false;
+        const matchesTeam = p.previous_team?.toLowerCase().includes(q);
+        const matchesPhone = p.mobile_number?.toLowerCase().includes(q);
+        const matchesUtr = p.transaction_id?.toLowerCase().includes(q);
+        if (!matchesName && !matchesJersey && !matchesId && !matchesTeam && !matchesPhone && !matchesUtr) {
+          return false;
+        }
       }
       if (rosterRoleFilter !== 'all' && p.role !== rosterRoleFilter) return false;
       if (rosterTournamentFilter !== 'all') {
         if (p.tournament_id && p.tournament_id !== 'all' && p.tournament_id !== rosterTournamentFilter) return false;
       }
+      if (rosterStatusFilter !== 'all') {
+        const isPaid = p.payment_status === 'paid';
+        if (rosterStatusFilter === 'paid' && !isPaid) return false;
+        if (rosterStatusFilter === 'pending' && isPaid) return false;
+      }
       return true;
     });
-  }, [registeredPlayers, rosterSearch, rosterRoleFilter, rosterTournamentFilter]);
+
+    return [...result].sort((a, b) => {
+      if (rosterSortBy === 'newest') {
+        const tA = new Date(a.created_at || 0).getTime();
+        const tB = new Date(b.created_at || 0).getTime();
+        return tB - tA;
+      }
+      if (rosterSortBy === 'oldest') {
+        const tA = new Date(a.created_at || 0).getTime();
+        const tB = new Date(b.created_at || 0).getTime();
+        return tA - tB;
+      }
+      if (rosterSortBy === 'name') {
+        return (a.name || '').localeCompare(b.name || '');
+      }
+      if (rosterSortBy === 'jersey') {
+        const jA = Number(a.jersey_number ?? 9999);
+        const jB = Number(b.jersey_number ?? 9999);
+        return jA - jB;
+      }
+      return 0;
+    });
+  }, [registeredPlayers, rosterSearch, rosterRoleFilter, rosterTournamentFilter, rosterStatusFilter, rosterSortBy]);
 
   // Role badges helper
   const getRoleBadge = (r: PlayerRole | string) => {
@@ -1300,12 +1410,19 @@ export default function App() {
             {/* Header Strip */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-3xl bg-[#0E1320]/80 border border-white/[0.08] backdrop-blur-xl">
               <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[11px] font-bold text-emerald-400">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    Supabase Live Sync
+                  </span>
+                  <span className="text-xs text-slate-400 font-mono">Premier League 3.0</span>
+                </div>
                 <h3 className="text-xl sm:text-2xl font-black font-display text-white flex items-center gap-2">
                   <Users className="w-5 h-5 text-amber-400" />
-                  All Registered Players <span className="text-gradient-gold">({registeredPlayers.length})</span>
+                  Official Player Roster <span className="text-gradient-gold">({registeredPlayers.length})</span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Live tournament roster loaded directly from Supabase. Newly registered players appear immediately.
+                  Live tournament draft board synced directly with Supabase. Click any player card for their full profile and payment receipt.
                 </p>
               </div>
 
@@ -1336,7 +1453,8 @@ export default function App() {
 
                 <button
                   onClick={() => fetchRegisteredPlayers()}
-                  className="h-10 px-3.5 rounded-xl border border-white/10 bg-white/[0.03] text-xs font-bold text-slate-200 hover:bg-white/[0.06] flex items-center gap-1.5"
+                  className="h-10 px-3.5 rounded-xl border border-white/10 bg-white/[0.03] text-xs font-bold text-slate-200 hover:bg-white/[0.06] flex items-center gap-1.5 transition-colors"
+                  title="Force refresh database records"
                 >
                   <RefreshCw className={cn('w-3.5 h-3.5 text-amber-400', isLoadingRoster && 'animate-spin')} />
                   Refresh
@@ -1344,7 +1462,8 @@ export default function App() {
 
                 <button
                   onClick={handleExportCsv}
-                  className="h-10 px-3.5 rounded-xl border border-white/10 bg-white/[0.03] text-xs font-bold text-slate-200 hover:bg-white/[0.06] flex items-center gap-1.5"
+                  className="h-10 px-3.5 rounded-xl border border-white/10 bg-white/[0.03] text-xs font-bold text-slate-200 hover:bg-white/[0.06] flex items-center gap-1.5 transition-colors"
+                  title="Export draft roster to CSV spreadsheet"
                 >
                   <Download className="w-3.5 h-3.5 text-emerald-400" />
                   Export CSV
@@ -1352,38 +1471,240 @@ export default function App() {
               </div>
             </div>
 
-            {/* Filter Bar */}
-            <div className="p-4 rounded-2xl bg-[#0E1320]/60 border border-white/[0.08] space-y-3">
+            {/* KPI Metrics Dashboard Strip */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {/* Card 1: Total Draft Pool */}
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className={cn(
+                  'p-4 rounded-2xl border text-left transition-all group flex flex-col justify-between',
+                  !hasActiveFilters
+                    ? 'bg-amber-500/10 border-amber-500/40 shadow-lg shadow-amber-500/5'
+                    : 'bg-[#0E1320]/80 border-white/[0.08] hover:border-amber-500/30'
+                )}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Pool</span>
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                    <Users className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <div className="text-2xl sm:text-3xl font-black font-display text-white">{rosterStats.total}</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">Players in draft</div>
+                </div>
+              </button>
+
+              {/* Card 2: Verified Fees */}
+              <button
+                type="button"
+                onClick={() => setRosterStatusFilter((prev) => (prev === 'paid' ? 'all' : 'paid'))}
+                className={cn(
+                  'p-4 rounded-2xl border text-left transition-all group flex flex-col justify-between',
+                  rosterStatusFilter === 'paid'
+                    ? 'bg-emerald-500/15 border-emerald-500/50 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/30'
+                    : 'bg-[#0E1320]/80 border-white/[0.08] hover:border-emerald-500/40'
+                )}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Verified
+                  </span>
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <div className="text-2xl sm:text-3xl font-black font-display text-emerald-300">{rosterStats.paid}</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">
+                    {rosterStats.total ? Math.round((rosterStats.paid / rosterStats.total) * 100) : 0}% fees confirmed
+                  </div>
+                </div>
+              </button>
+
+              {/* Card 3: Pending Verification */}
+              <button
+                type="button"
+                onClick={() => setRosterStatusFilter((prev) => (prev === 'pending' ? 'all' : 'pending'))}
+                className={cn(
+                  'p-4 rounded-2xl border text-left transition-all group flex flex-col justify-between',
+                  rosterStatusFilter === 'pending'
+                    ? 'bg-amber-500/15 border-amber-500/50 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500/30'
+                    : 'bg-[#0E1320]/80 border-white/[0.08] hover:border-amber-500/40'
+                )}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-amber-400" /> Pending
+                  </span>
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <div className="text-2xl sm:text-3xl font-black font-display text-amber-300">{rosterStats.pending}</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">Awaiting bank check</div>
+                </div>
+              </button>
+
+              {/* Card 4: Divisions & Role Breakdown */}
+              <div className="p-4 rounded-2xl border border-white/[0.08] bg-[#0E1320]/80 flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Breakdown</span>
+                  <div className="w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                    <Trophy className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400 font-medium">Men's / Women's</span>
+                    <span className="text-white font-bold">{rosterStats.mens} / {rosterStats.womens}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+                    <span>👑 {rosterStats.allRounders}</span>
+                    <span>🏏 {rosterStats.batters}</span>
+                    <span>⚡ {rosterStats.bowlers}</span>
+                    <span>🧤 {rosterStats.keepers}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter Bar & Controls */}
+            <div className="p-4 rounded-3xl bg-[#0E1320]/70 border border-white/[0.08] space-y-3.5">
+              {/* Row 1: Search & Sort dropdown */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <div className="relative flex-1">
-                  <Search className="w-4 h-4 absolute left-3 top-3.5 text-slate-400 pointer-events-none" />
+                  <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400 pointer-events-none" />
                   <input
-                    placeholder="Search by player name or jersey number..."
+                    placeholder="Search by name, jersey, team, phone, or UTR..."
                     value={rosterSearch}
                     onChange={(e) => setRosterSearch(e.target.value)}
-                    className="w-full rounded-xl bg-black/40 border border-white/10 pl-9 pr-8 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                    className="w-full rounded-2xl bg-black/40 border border-white/10 pl-10 pr-9 h-11 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-colors"
                   />
                   {rosterSearch && (
-                    <button onClick={() => setRosterSearch('')} className="absolute right-3 top-3.5 text-slate-400 hover:text-white">
+                    <button
+                      onClick={() => setRosterSearch('')}
+                      className="absolute right-3.5 top-3.5 text-slate-400 hover:text-white"
+                      title="Clear search"
+                    >
                       <X className="w-4 h-4" />
                     </button>
                   )}
                 </div>
 
-                {/* Role Chips */}
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5 pointer-events-none" />
+                    <select
+                      value={rosterSortBy}
+                      onChange={(e) => setRosterSortBy(e.target.value as any)}
+                      aria-label="Sort players by"
+                      className="h-11 rounded-2xl bg-black/40 border border-white/10 pl-8 pr-7 text-xs font-bold text-white focus:outline-none focus:border-amber-400 cursor-pointer appearance-none"
+                    >
+                      <option value="newest" className="bg-[#0E1320] text-white">Sort: Newest First</option>
+                      <option value="oldest" className="bg-[#0E1320] text-white">Sort: Oldest First</option>
+                      <option value="name" className="bg-[#0E1320] text-white">Sort: Name (A-Z)</option>
+                      <option value="jersey" className="bg-[#0E1320] text-white">Sort: Jersey #</option>
+                    </select>
+                  </div>
+
+                  {hasActiveFilters && (
+                    <button
+                      onClick={handleClearFilters}
+                      className="h-11 px-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 text-xs font-bold text-rose-300 hover:bg-rose-500/20 flex items-center gap-1.5 transition-colors shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      Clear Filters
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Row 2: Filter Pills (Status, League, Role) */}
+              <div className="flex flex-col gap-2.5 pt-1 border-t border-white/[0.05]">
+                {/* League & Status filter row */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  {/* Status Pills */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Status:</span>
+                    <button
+                      onClick={() => setRosterStatusFilter('all')}
+                      className={cn(
+                        'px-2.5 py-1 rounded-xl text-xs font-bold transition-all',
+                        rosterStatusFilter === 'all'
+                          ? 'bg-white text-black'
+                          : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
+                      )}
+                    >
+                      All ({rosterStats.total})
+                    </button>
+                    <button
+                      onClick={() => setRosterStatusFilter('paid')}
+                      className={cn(
+                        'px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1',
+                        rosterStatusFilter === 'paid'
+                          ? 'bg-emerald-500 text-black shadow-sm'
+                          : 'bg-white/[0.04] text-emerald-400 hover:bg-emerald-500/10'
+                      )}
+                    >
+                      <CheckCircle2 className="w-3 h-3" />
+                      Verified ({rosterStats.paid})
+                    </button>
+                    <button
+                      onClick={() => setRosterStatusFilter('pending')}
+                      className={cn(
+                        'px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1',
+                        rosterStatusFilter === 'pending'
+                          ? 'bg-amber-500 text-black shadow-sm'
+                          : 'bg-white/[0.04] text-amber-400 hover:bg-amber-500/10'
+                      )}
+                    >
+                      <Clock className="w-3 h-3" />
+                      Pending ({rosterStats.pending})
+                    </button>
+                  </div>
+
+                  {/* League Pills */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">League:</span>
+                    {[
+                      { id: 'all', label: 'All Leagues' },
+                      { id: 'kapl-3-mens', label: "🏆 Men's" },
+                      { id: 'kapl-3-womens', label: "🏆 Women's" },
+                    ].map((chip) => (
+                      <button
+                        key={chip.id}
+                        onClick={() => setRosterTournamentFilter(chip.id)}
+                        className={cn(
+                          'px-2.5 py-1 rounded-xl text-xs font-bold transition-all',
+                          rosterTournamentFilter === chip.id
+                            ? 'bg-amber-500 text-black shadow-sm'
+                            : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
+                        )}
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Role Pills */}
                 <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Role:</span>
                   {[
-                    { id: 'all', label: 'All Roles' },
-                    { id: 'all_rounder', label: '👑 All-Rounders' },
-                    { id: 'batter', label: '🏏 Batters' },
-                    { id: 'bowler', label: '⚡ Bowlers' },
-                    { id: 'wicket_keeper', label: '🧤 Keepers' },
+                    { id: 'all', label: `All Roles (${rosterStats.total})` },
+                    { id: 'all_rounder', label: `👑 All-Rounders (${rosterStats.allRounders})` },
+                    { id: 'batter', label: `🏏 Batters (${rosterStats.batters})` },
+                    { id: 'bowler', label: `⚡ Bowlers (${rosterStats.bowlers})` },
+                    { id: 'wicket_keeper', label: `🧤 Keepers (${rosterStats.keepers})` },
                   ].map((chip) => (
                     <button
                       key={chip.id}
                       onClick={() => setRosterRoleFilter(chip.id)}
                       className={cn(
-                        'px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
+                        'px-2.5 py-1 rounded-xl text-xs font-bold transition-all',
                         rosterRoleFilter === chip.id
                           ? 'bg-amber-500 text-black shadow-sm'
                           : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
@@ -1393,28 +1714,17 @@ export default function App() {
                     </button>
                   ))}
                 </div>
+              </div>
 
-                {/* Tournament Filter Chips */}
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {[
-                    { id: 'all', label: 'All Tournaments' },
-                    { id: 'kapl-3-mens', label: "🏆 Men's League" },
-                    { id: 'kapl-3-womens', label: "🏆 Women's League" },
-                  ].map((chip) => (
-                    <button
-                      key={chip.id}
-                      onClick={() => setRosterTournamentFilter(chip.id)}
-                      className={cn(
-                        'px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
-                        rosterTournamentFilter === chip.id
-                          ? 'bg-emerald-500 text-black shadow-sm'
-                          : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
-                      )}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                </div>
+              {/* Result Count Indicator */}
+              <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+                <span>
+                  Showing <strong className="text-white font-bold">{filteredRoster.length}</strong> of{' '}
+                  <strong className="text-white font-bold">{registeredPlayers.length}</strong> players
+                </span>
+                {hasActiveFilters && (
+                  <span className="text-amber-400 font-medium">Filtered view active</span>
+                )}
               </div>
             </div>
 
@@ -1422,17 +1732,28 @@ export default function App() {
             {isLoadingRoster && registeredPlayers.length === 0 ? (
               <div className="py-16 text-center space-y-3">
                 <div className="w-10 h-10 border-3 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-sm font-semibold text-slate-300">Loading players from Supabase...</p>
+                <p className="text-sm font-semibold text-slate-300">Loading live player roster...</p>
               </div>
             ) : filteredRoster.length === 0 ? (
               <div className="py-16 text-center space-y-3 rounded-3xl border border-white/10 bg-[#0E1320]/40 p-8">
                 <span className="text-4xl">🏏</span>
                 <h4 className="text-lg font-bold text-white">No Players Found</h4>
                 <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                  {rosterSearch ? `No players matched "${rosterSearch}".` : 'No players registered yet.'}
+                  {hasActiveFilters
+                    ? 'No players matched your active search and filter criteria.'
+                    : 'No players registered yet. Be the first to register!'}
                 </p>
+                {hasActiveFilters && (
+                  <button
+                    onClick={handleClearFilters}
+                    className="mt-2 px-4 py-2 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400"
+                  >
+                    Reset All Filters
+                  </button>
+                )}
               </div>
             ) : rosterViewMode === 'grid' ? (
+              /* Enhanced Grid View */
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {filteredRoster.map((player) => {
                   const isNewlyRegistered = newlyRegisteredPlayer && player.id === newlyRegisteredPlayer.id;
@@ -1440,23 +1761,31 @@ export default function App() {
                   return (
                     <div
                       key={player.id}
+                      onClick={() => setSelectedPlayerModal(player)}
                       className={cn(
-                        'relative overflow-hidden rounded-3xl border p-4.5 transition-all flex flex-col justify-between space-y-3',
+                        'group relative overflow-hidden rounded-3xl border p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-3.5',
                         isNewlyRegistered
-                          ? 'border-2 border-amber-400 bg-gradient-to-b from-amber-500/15 via-[#161C2E] to-[#0E1320] shadow-xl shadow-amber-500/20 ring-2 ring-amber-400/40'
-                          : 'border-white/[0.08] bg-[#0E1320]/80 hover:border-amber-500/30 hover:bg-[#0E1320]'
+                          ? 'border-amber-400 bg-gradient-to-b from-amber-500/15 via-[#161C2E] to-[#0E1320] shadow-xl shadow-amber-500/20 ring-2 ring-amber-400/40'
+                          : 'border-white/[0.08] bg-[#0E1320]/80 hover:border-amber-400/50 hover:bg-[#121829] hover:shadow-xl hover:shadow-black/50 hover:-translate-y-0.5'
                       )}
                     >
-                      {isNewlyRegistered && (
-                        <div className="absolute top-2.5 right-2.5">
+                      {/* Jersey badge top-right */}
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                        {isNewlyRegistered && (
                           <span className="bg-amber-400 text-black font-black text-[10px] px-2 py-0.5 rounded-full animate-pulse shadow-sm">
-                            ⭐ YOU (JUST REGISTERED)
+                            ⭐ YOU
                           </span>
-                        </div>
-                      )}
+                        )}
+                        {player.jersey_number ? (
+                          <span className="bg-black/60 border border-amber-500/30 text-amber-400 font-mono font-black text-xs px-2.5 py-0.5 rounded-full">
+                            #{player.jersey_number}
+                          </span>
+                        ) : null}
+                      </div>
 
-                      <div className="flex items-start gap-3">
-                        <div className="w-12 h-12 rounded-2xl overflow-hidden bg-neutral-900 border border-white/15 flex items-center justify-center shrink-0">
+                      {/* Player Avatar & Details Header */}
+                      <div className="flex items-start gap-3.5 pr-14">
+                        <div className="w-13 h-13 rounded-2xl overflow-hidden bg-neutral-900 border border-white/15 flex items-center justify-center shrink-0 shadow-md group-hover:border-amber-400/60 transition-colors">
                           {player.photo_url ? (
                             <img src={player.photo_url} alt={player.name} className="w-full h-full object-cover" />
                           ) : (
@@ -1465,14 +1794,10 @@ export default function App() {
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <h4 className="font-bold text-white text-sm truncate">{player.name}</h4>
-                            {player.jersey_number && (
-                              <span className="text-[11px] font-mono font-black text-amber-400">#{player.jersey_number}</span>
-                            )}
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                          <h4 className="font-bold text-white text-base truncate group-hover:text-amber-300 transition-colors">
+                            {player.name}
+                          </h4>
+                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
                             <span className={cn('text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg border', getRoleBadge(player.role).cls)}>
                               {getRoleBadge(player.role).icon} {player.role?.replace('_', ' ')}
                             </span>
@@ -1483,33 +1808,59 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-1.5 text-left pt-1 border-t border-white/[0.06] text-[11px]">
-                        <div className="p-2 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                      {/* Batting & Bowling Specs */}
+                      <div className="grid grid-cols-2 gap-1.5 text-left text-xs">
+                        <div className="p-2 rounded-xl bg-white/[0.02] border border-white/[0.05]">
                           <span className="text-[9px] uppercase font-bold text-slate-400 block">Batting</span>
-                          <span className="font-medium text-white truncate block">{player.batting_style || 'Right-hand'}</span>
+                          <span className="font-semibold text-slate-200 truncate block text-[11px]">{player.batting_style || 'Right-hand'}</span>
                         </div>
-                        <div className="p-2 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                        <div className="p-2 rounded-xl bg-white/[0.02] border border-white/[0.05]">
                           <span className="text-[9px] uppercase font-bold text-slate-400 block">Bowling</span>
-                          <span className="font-medium text-white truncate block">{player.bowling_style || 'None'}</span>
+                          <span className="font-semibold text-slate-200 truncate block text-[11px]">{player.bowling_style || 'None'}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-1 border-t border-white/[0.06] text-[10px]">
-                        <span className={cn('font-bold flex items-center gap-1', player.payment_status === 'paid' ? 'text-emerald-400' : 'text-amber-400')}>
+                      {/* Franchise / Experience pill */}
+                      {player.previous_team ? (
+                        <div className="text-[11px] px-2.5 py-1 rounded-xl bg-white/[0.03] border border-white/[0.06] text-slate-300 flex items-center justify-between">
+                          <span className="text-slate-400 text-[10px] uppercase font-bold">Franchise</span>
+                          <span className="font-medium text-amber-300 truncate max-w-[140px]">{player.previous_team}</span>
+                        </div>
+                      ) : (
+                        <div className="text-[11px] px-2.5 py-1 rounded-xl bg-white/[0.02] border border-white/[0.04] text-slate-400 flex items-center justify-between">
+                          <span className="text-[10px] uppercase font-bold">Experience</span>
+                          <span className="font-medium text-slate-300">
+                            {player.experience === 'experienced' ? 'Veteran Player' : 'New Draft Entrant'}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Bottom row: Payment status & View Profile link */}
+                      <div className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-xs">
+                        <span
+                          className={cn(
+                            'font-bold inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg border',
+                            player.payment_status === 'paid'
+                              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                              : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                          )}
+                        >
                           {player.payment_status === 'paid' ? (
                             <>
                               <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                              Payment: Verified ✓
+                              Verified ✓
                             </>
                           ) : (
                             <>
                               <Clock className="w-3 h-3 text-amber-400" />
-                              Payment: Pending
+                              Pending
                             </>
                           )}
                         </span>
-                        <span className="font-mono text-slate-400">
-                          {player.created_at ? new Date(player.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : ''}
+
+                        <span className="text-slate-400 group-hover:text-amber-400 text-xs font-bold inline-flex items-center gap-1 transition-colors">
+                          <Eye className="w-3.5 h-3.5" />
+                          Profile
                         </span>
                       </div>
                     </div>
@@ -1517,53 +1868,81 @@ export default function App() {
                 })}
               </div>
             ) : (
-              /* Table View */
+              /* Enhanced Table View */
               <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 overflow-hidden shadow-xl">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-white/[0.04] border-b border-white/[0.08] text-slate-400 uppercase text-[10px] font-black tracking-wider">
                       <tr>
-                        <th className="py-3 px-4">Player</th>
-                        <th className="py-3 px-3">Role</th>
-                        <th className="py-3 px-3">Jersey #</th>
-                        <th className="py-3 px-3">Batting</th>
-                        <th className="py-3 px-3">Bowling</th>
-                        <th className="py-3 px-3">League</th>
-                        <th className="py-3 px-3">Payment</th>
-                        <th className="py-3 px-4">Date</th>
+                        <th className="py-3.5 px-4">Player</th>
+                        <th className="py-3.5 px-3">Jersey #</th>
+                        <th className="py-3.5 px-3">Role</th>
+                        <th className="py-3.5 px-3">Batting</th>
+                        <th className="py-3.5 px-3">Bowling</th>
+                        <th className="py-3.5 px-3">League</th>
+                        <th className="py-3.5 px-3">Franchise / Exp</th>
+                        <th className="py-3.5 px-3">Payment</th>
+                        <th className="py-3.5 px-3">Registered</th>
+                        <th className="py-3.5 px-4 text-right">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/[0.05]">
                       {filteredRoster.map((player) => (
-                        <tr key={player.id} className="hover:bg-white/[0.02] transition-colors">
+                        <tr
+                          key={player.id}
+                          onClick={() => setSelectedPlayerModal(player)}
+                          className="hover:bg-white/[0.03] transition-colors cursor-pointer"
+                        >
                           <td className="py-3 px-4 font-bold text-white flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-lg overflow-hidden bg-white/10 flex items-center justify-center shrink-0">
+                            <div className="w-8 h-8 rounded-xl overflow-hidden bg-white/10 flex items-center justify-center shrink-0 border border-white/10">
                               {player.photo_url ? (
                                 <img src={player.photo_url} alt={player.name} className="w-full h-full object-cover" />
                               ) : (
-                                <span className="text-xs">{getRoleBadge(player.role).icon}</span>
+                                <span className="text-sm">{getRoleBadge(player.role).icon}</span>
                               )}
                             </div>
-                            <span>{player.name}</span>
+                            <span className="font-semibold text-white">{player.name}</span>
+                          </td>
+                          <td className="py-3 px-3 font-mono font-black text-amber-400">
+                            {player.jersey_number ? `#${player.jersey_number}` : '-'}
                           </td>
                           <td className="py-3 px-3">
                             <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-lg border', getRoleBadge(player.role).cls)}>
                               {player.role?.replace('_', ' ')}
                             </span>
                           </td>
-                          <td className="py-3 px-3 font-mono font-black text-amber-400">
-                            {player.jersey_number ? `#${player.jersey_number}` : '-'}
-                          </td>
                           <td className="py-3 px-3 text-slate-300">{player.batting_style || 'Right-hand bat'}</td>
                           <td className="py-3 px-3 text-slate-300">{player.bowling_style || 'None'}</td>
                           <td className="py-3 px-3 text-slate-300">{getTournamentLabel(player.tournament_id)}</td>
+                          <td className="py-3 px-3 text-slate-300 truncate max-w-[140px]">
+                            {player.previous_team || (player.experience === 'experienced' ? 'Veteran' : 'New Entrant')}
+                          </td>
                           <td className="py-3 px-3">
-                            <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-lg border inline-flex items-center gap-1', player.payment_status === 'paid' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40')}>
+                            <span
+                              className={cn(
+                                'text-[10px] font-bold px-2 py-0.5 rounded-lg border inline-flex items-center gap-1',
+                                player.payment_status === 'paid'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                  : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                              )}
+                            >
                               {player.payment_status === 'paid' ? 'Verified ✓' : 'Pending'}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">
-                            {player.created_at ? new Date(player.created_at).toLocaleDateString('en-IN') : ''}
+                          <td className="py-3 px-3 text-slate-400 font-mono text-[11px]">
+                            {player.created_at ? new Date(player.created_at).toLocaleDateString('en-IN') : '-'}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedPlayerModal(player);
+                              }}
+                              className="px-2.5 py-1 rounded-xl bg-white/[0.05] border border-white/10 text-white hover:bg-amber-500 hover:text-black font-bold text-[11px] inline-flex items-center gap-1 transition-colors"
+                            >
+                              <Eye className="w-3 h-3" />
+                              View
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -1572,6 +1951,278 @@ export default function App() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ------------------------------------------------------------- */}
+        {/* INTERACTIVE PLAYER PROFILE MODAL */}
+        {/* ------------------------------------------------------------- */}
+        {selectedPlayerModal && (
+          <div
+            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+            onClick={() => setSelectedPlayerModal(null)}
+          >
+            <div
+              className="bg-[#0E1320] border border-white/15 rounded-3xl max-w-2xl w-full p-6 sm:p-7 space-y-5 shadow-2xl relative animate-in zoom-in-95 duration-200 text-left my-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between gap-4 pb-4 border-b border-white/[0.08]">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-neutral-900 border-2 border-amber-400/60 flex items-center justify-center shrink-0 shadow-lg">
+                    {selectedPlayerModal.photo_url ? (
+                      <img
+                        src={selectedPlayerModal.photo_url}
+                        alt={selectedPlayerModal.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-3xl">{getRoleBadge(selectedPlayerModal.role).icon}</span>
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xl sm:text-2xl font-black font-display text-white">
+                        {selectedPlayerModal.name}
+                      </h3>
+                      {selectedPlayerModal.jersey_number && (
+                        <span className="bg-amber-400/20 text-amber-400 border border-amber-400/40 font-mono font-black text-xs px-2 py-0.5 rounded-full">
+                          #{selectedPlayerModal.jersey_number}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 pt-1.5">
+                      <span className={cn('text-xs font-bold uppercase px-2.5 py-0.5 rounded-lg border', getRoleBadge(selectedPlayerModal.role).cls)}>
+                        {getRoleBadge(selectedPlayerModal.role).icon} {selectedPlayerModal.role?.replace('_', ' ')}
+                      </span>
+                      <span className="text-xs px-2.5 py-0.5 rounded-lg border border-white/10 text-slate-300">
+                        {getTournamentLabel(selectedPlayerModal.tournament_id, true)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setSelectedPlayerModal(null)}
+                  className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.1] transition-colors shrink-0"
+                  title="Close (Esc)"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Cricket Specifications Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Batting Style</span>
+                  <span className="font-semibold text-white mt-0.5 block">{selectedPlayerModal.batting_style || 'Right-hand'}</span>
+                </div>
+                <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Bowling Style</span>
+                  <span className="font-semibold text-white mt-0.5 block">{selectedPlayerModal.bowling_style || 'None'}</span>
+                </div>
+                <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Base Price</span>
+                  <span className="font-semibold text-amber-400 mt-0.5 block font-mono">₹{selectedPlayerModal.base_price || 100}</span>
+                </div>
+                <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Gender</span>
+                  <span className="font-semibold text-white mt-0.5 block capitalize">{selectedPlayerModal.gender || 'Not specified'}</span>
+                </div>
+              </div>
+
+              {/* Franchise & Career */}
+              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold text-slate-400">Previous Franchise / Experience</span>
+                  <span className="font-bold text-amber-300">
+                    {selectedPlayerModal.previous_team || (selectedPlayerModal.experience === 'experienced' ? 'Veteran Player' : 'First Season / New Entrant')}
+                  </span>
+                </div>
+                {selectedPlayerModal.past_achievements && (
+                  <div className="pt-2 border-t border-white/[0.04]">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Past Achievements</span>
+                    <p className="text-slate-200 leading-relaxed">{selectedPlayerModal.past_achievements}</p>
+                  </div>
+                )}
+                {selectedPlayerModal.bio && (
+                  <div className="pt-2 border-t border-white/[0.04]">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Player Note / Bio</span>
+                    <p className="text-slate-300 italic">"{selectedPlayerModal.bio}"</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Contact Information */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] flex items-center gap-2.5">
+                  <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <div className="min-w-0">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Phone</span>
+                    <span className="font-semibold text-white font-mono">{selectedPlayerModal.mobile_number || 'Confidential'}</span>
+                  </div>
+                </div>
+                <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] flex items-center gap-2.5">
+                  <Mail className="w-4 h-4 text-blue-400 shrink-0" />
+                  <div className="min-w-0 truncate">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Email</span>
+                    <span className="font-semibold text-white truncate block">{selectedPlayerModal.email || 'None provided'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Verification Dossier */}
+              <div className="p-4 rounded-2xl bg-black/40 border border-white/10 space-y-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1.5">
+                    <CreditCard className="w-3.5 h-3.5 text-amber-400" />
+                    Payment Verification Record
+                  </span>
+                  <span
+                    className={cn(
+                      'text-xs font-bold px-2.5 py-0.5 rounded-lg border inline-flex items-center gap-1',
+                      selectedPlayerModal.payment_status === 'paid'
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                        : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                    )}
+                  >
+                    {selectedPlayerModal.payment_status === 'paid' ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        Verified ✓
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="w-3.5 h-3.5 text-amber-400" />
+                        Pending Verification
+                      </>
+                    )}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1">
+                  <div>
+                    <span className="text-slate-400">Entry Fee:</span>{' '}
+                    <strong className="text-white font-bold font-mono">₹{selectedPlayerModal.payment_amount || REGISTRATION_ENTRY_FEE}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Method:</span>{' '}
+                    <span className="text-white font-medium uppercase">{selectedPlayerModal.payment_method?.replace('_', ' ') || 'UPI QR'}</span>
+                  </div>
+                </div>
+
+                {/* UTR / Transaction ID */}
+                <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Bank Transaction ID / UTR</span>
+                    <span className="font-mono font-bold text-amber-300 text-xs truncate block">
+                      {selectedPlayerModal.transaction_id || 'Not recorded'}
+                    </span>
+                  </div>
+                  {selectedPlayerModal.transaction_id && (
+                    <button
+                      onClick={() => handleCopyModalUtr(selectedPlayerModal.transaction_id)}
+                      className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] font-bold text-white flex items-center gap-1 transition-colors shrink-0"
+                    >
+                      {copiedModalUtr ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-400" /> Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" /> Copy
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {/* Payment Screenshot Proof */}
+                {selectedPlayerModal.payment_receipt_url ? (
+                  <div className="pt-2 border-t border-white/[0.06]">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] uppercase font-bold text-slate-400">Payment Screenshot</span>
+                      <button
+                        onClick={() => setExpandedReceiptModal(selectedPlayerModal.payment_receipt_url || null)}
+                        className="text-amber-400 hover:text-amber-300 text-[11px] font-bold inline-flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" /> Click to enlarge
+                      </button>
+                    </div>
+                    <div
+                      onClick={() => setExpandedReceiptModal(selectedPlayerModal.payment_receipt_url || null)}
+                      className="group/img relative rounded-2xl overflow-hidden border border-white/15 bg-neutral-900 max-h-48 cursor-pointer flex items-center justify-center"
+                    >
+                      <img
+                        src={selectedPlayerModal.payment_receipt_url}
+                        alt="Payment Receipt"
+                        className="w-full h-full object-cover max-h-48 group-hover/img:scale-105 transition-transform"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-opacity text-white font-bold text-xs gap-1.5 backdrop-blur-[2px]">
+                        <Eye className="w-4 h-4" /> View Full Screenshot
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04] text-center text-slate-400 text-xs">
+                    No payment receipt screenshot uploaded for this registration.
+                  </div>
+                )}
+              </div>
+
+              {/* Close Footer */}
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlayerModal(null)}
+                  className="px-5 py-2.5 rounded-xl border border-white/15 bg-white/[0.05] hover:bg-white/[0.1] text-white text-xs font-bold transition-colors"
+                >
+                  Close Profile
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ------------------------------------------------------------- */}
+        {/* PAYMENT SCREENSHOT LIGHTBOX MODAL */}
+        {/* ------------------------------------------------------------- */}
+        {expandedReceiptModal && (
+          <div
+            className="fixed inset-0 z-60 bg-black/95 backdrop-blur-lg flex flex-col items-center justify-center p-4 animate-in fade-in duration-200"
+            onClick={() => setExpandedReceiptModal(null)}
+          >
+            <div className="max-w-4xl w-full flex flex-col items-center space-y-3" onClick={(e) => e.stopPropagation()}>
+              <div className="w-full flex items-center justify-between text-white pb-2">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span className="text-sm font-bold">Payment Receipt Proof</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={expandedReceiptModal}
+                    download="payment-receipt.jpg"
+                    className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white flex items-center gap-1.5 transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-400" />
+                    Download
+                  </a>
+                  <button
+                    onClick={() => setExpandedReceiptModal(null)}
+                    className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="max-h-[82vh] overflow-auto rounded-2xl border border-white/20 shadow-2xl bg-black">
+                <img
+                  src={expandedReceiptModal}
+                  alt="Full Payment Screenshot"
+                  className="max-h-[82vh] max-w-full object-contain"
+                />
+              </div>
+            </div>
           </div>
         )}
       </main>
