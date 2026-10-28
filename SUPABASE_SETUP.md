@@ -38,6 +38,8 @@ create table players (
   past_achievements text,
   bio text,
   gender text check (gender in ('male', 'female', null)),
+  age integer,
+  flat_no text,
   payment_method text check (payment_method in ('upi_qr', 'cash', 'bank_transfer', null)),
   payment_status text not null default 'pending' check (payment_status in ('paid', 'pending', 'cash_venue')),
   transaction_id text unique,
@@ -46,6 +48,10 @@ create table players (
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );
+
+-- Migration for existing tables (run this if you already have the table created):
+ALTER TABLE players ADD COLUMN IF NOT EXISTS age integer;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS flat_no text;
 
 -- Enable Row Level Security
 alter table players enable row level security;

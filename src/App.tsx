@@ -66,9 +66,6 @@ const PREVIOUS_TEAMS = [
   "Kapil Ke Singham",
   "Super Strikers",
   "Kapil Avengers",
-  "Kapil Queens",
-  "Falconettes",
-  "Royal Challengers Women",
   "Other / Custom Franchise",
 ];
 
@@ -89,6 +86,8 @@ export default function App() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [gender, setGender] = useState<'male' | 'female'>('male');
+  const [age, setAge] = useState('');
+  const [flatNo, setFlatNo] = useState('');
   const [tournamentId, setTournamentId] = useState('kapl-3-mens');
   const [role, setRole] = useState<PlayerRole>('all_rounder');
   const [battingStyle, setBattingStyle] = useState('Right-hand bat');
@@ -123,6 +122,7 @@ export default function App() {
   const [isLoadingRoster, setIsLoadingRoster] = useState(true);
   const [rosterSearch, setRosterSearch] = useState('');
   const [rosterRoleFilter, setRosterRoleFilter] = useState('all');
+  const [rosterGenderFilter, setRosterGenderFilter] = useState<'all' | 'male' | 'female'>('all');
   const [rosterTournamentFilter, setRosterTournamentFilter] = useState('all');
   const [rosterStatusFilter, setRosterStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
   const [rosterSortBy, setRosterSortBy] = useState<'newest' | 'oldest' | 'name' | 'jersey'>('newest');
@@ -153,6 +153,11 @@ export default function App() {
         data
           .filter((p) => p && !/^[ab][1-4]-/.test(p.id))
           .forEach((p) => {
+            const rawBio = p.bio || '';
+            const parsedFlat = p.flat_no || rawBio.match(/\[Flat:\s*([^\]|]+)/i)?.[1]?.trim() || undefined;
+            const parsedAge = p.age || rawBio.match(/Age:\s*([^\]|]+)/i)?.[1]?.trim() || undefined;
+            const cleanBio = rawBio.replace(/\[Flat:[^\]]+\]\s*/i, '').trim();
+
             map.set(p.id, {
               id: p.id,
               name: p.name,
@@ -168,8 +173,10 @@ export default function App() {
               experience: p.experience || undefined,
               previous_team: p.previous_team || undefined,
               past_achievements: p.past_achievements || undefined,
-              bio: p.bio || undefined,
-              gender: p.gender || undefined,
+              bio: cleanBio || undefined,
+              gender: (p.gender as 'male' | 'female') || undefined,
+              age: parsedAge,
+              flat_no: parsedFlat,
               payment_method: p.payment_method || 'upi_qr',
               payment_status: (p.payment_status as PaymentStatus) || 'pending',
               transaction_id: p.transaction_id || undefined,
@@ -354,6 +361,20 @@ export default function App() {
     if (!cleanPhone || cleanPhone.length < 10) {
       errs.phone = 'Please enter a valid 10-digit mobile number';
     }
+    if (!gender) {
+      errs.gender = 'Please select male or female';
+    }
+    if (!age.trim()) {
+      errs.age = 'Please enter your age';
+    } else {
+      const numAge = Number(age);
+      if (isNaN(numAge) || numAge < 5 || numAge > 99) {
+        errs.age = 'Please enter a valid age (5 - 99)';
+      }
+    }
+    if (!flatNo.trim()) {
+      errs.flatNo = 'Please enter your flat number (e.g. A-101)';
+    }
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errs.email = 'Please enter a valid email address';
     }
@@ -361,7 +382,7 @@ export default function App() {
       errs.transactionId = 'Please enter a UTR (Transaction Reference ID)';
     }
     if (!paymentReceiptUrl) {
-      errs.paymentReceipt = 'Payment screenshot is required';
+      errs.paymentReceipt = 'Payment screenshot is compulsory';
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -375,17 +396,21 @@ export default function App() {
     setIsSubmitting(true);
     const playerId = generateUUID();
     const computedPaymentStatus: PaymentStatus = 'pending';
+    const cleanPhone = phone.replace(/\D/g, '');
+    const numAge = age.trim() ? Number(age) : undefined;
+    const cleanFlat = flatNo.trim();
+    const bioText = `[Flat: ${cleanFlat} | Age: ${age.trim()}] ${bio.trim()}`.trim();
 
     const newPlayer: Player = {
       id: playerId,
       name: fullName.trim(),
-      mobile_number: phone.trim(),
+      mobile_number: cleanPhone,
       email: email.trim() || undefined,
       role,
       batting_style: battingStyle,
       bowling_style: bowlingStyle,
-      jersey_number: jerseyNumber.trim() ? Number(jerseyNumber) : null,
-      tournament_id: tournamentId,
+      jersey_number: null,
+      tournament_id: 'kapl-3-mens',
       base_price: 100,
       photo_url: photoUrl.trim() || null,
       experience,
@@ -393,6 +418,8 @@ export default function App() {
       past_achievements: pastAchievements.trim() || undefined,
       bio: bio.trim() || undefined,
       gender,
+      age: numAge,
+      flat_no: cleanFlat,
       payment_method: paymentMethod,
       payment_status: computedPaymentStatus,
       transaction_id: transactionId.trim() || undefined,
@@ -402,30 +429,47 @@ export default function App() {
     };
 
     try {
-      // 1. Direct insert to Supabase players table
-      const { error: insertError } = await supabase.from('players').insert({
+      const basePayload: any = {
         id: playerId,
         name: newPlayer.name,
         photo_url: newPlayer.photo_url,
         role: newPlayer.role,
         batting_style: newPlayer.batting_style,
         bowling_style: newPlayer.bowling_style,
-        jersey_number: newPlayer.jersey_number,
+        jersey_number: null,
         mobile_number: newPlayer.mobile_number,
         email: newPlayer.email,
         experience: newPlayer.experience,
         previous_team: newPlayer.previous_team,
         past_achievements: newPlayer.past_achievements,
-        bio: newPlayer.bio,
+        bio: bioText,
         gender: newPlayer.gender,
         payment_method: newPlayer.payment_method,
         payment_status: newPlayer.payment_status,
         transaction_id: newPlayer.transaction_id,
         payment_amount: newPlayer.payment_amount,
         payment_receipt_url: newPlayer.payment_receipt_url,
-        tournament_id: tournamentId,
+        tournament_id: 'kapl-3-mens',
         base_price: 100,
+      };
+
+      // 1. First try inserting with direct age and flat_no columns
+      let { error: insertError } = await supabase.from('players').insert({
+        ...basePayload,
+        age: numAge,
+        flat_no: cleanFlat,
       });
+
+      // Fallback: If Postgres schema does not have age or flat_no columns yet, insert basePayload (which stores them in bio)
+      if (
+        insertError &&
+        (insertError.code === 'PGRST204' ||
+          insertError.message?.includes('column') ||
+          insertError.message?.includes('schema cache'))
+      ) {
+        const fallbackRes = await supabase.from('players').insert(basePayload);
+        insertError = fallbackRes.error;
+      }
 
       if (insertError) {
         throw new Error(insertError.message);
@@ -474,6 +518,9 @@ export default function App() {
     setFullName('');
     setPhone('');
     setEmail('');
+    setGender('male');
+    setAge('');
+    setFlatNo('');
     setJerseyNumber('');
     setPhotoUrl('');
     setBio('');
@@ -486,17 +533,19 @@ export default function App() {
   // Export to CSV
   const handleExportCsv = () => {
     if (registeredPlayers.length === 0) return;
-    const headers = ['Player ID', 'Name', 'Phone', 'Email', 'Role', 'Jersey Number', 'Batting', 'Bowling', 'Tournament', 'Payment Status', 'Transaction ID', 'Registered At'];
+    const headers = ['Player ID', 'Name', 'Phone', 'Gender', 'Age', 'Flat No', 'Email', 'Role', 'Batting', 'Bowling', 'Previous Team', 'Payment Status', 'Transaction ID', 'Registered At'];
     const rows = registeredPlayers.map((p) => [
       p.id,
       `"${p.name.replace(/"/g, '""')}"`,
       p.mobile_number || '-',
+      p.gender || '-',
+      p.age || '-',
+      p.flat_no || '-',
       p.email || '-',
       p.role,
-      p.jersey_number || '-',
       p.batting_style || '-',
       p.bowling_style || '-',
-      p.tournament_id || '-',
+      p.previous_team || '-',
       p.payment_status || 'pending',
       p.transaction_id || '-',
       p.created_at || '-',
@@ -524,20 +573,20 @@ export default function App() {
     const total = registeredPlayers.length;
     const paid = registeredPlayers.filter((p) => p.payment_status === 'paid').length;
     const pending = total - paid;
-    const mens = registeredPlayers.filter((p) => p.tournament_id === 'kapl-3-mens' || p.tournament_id === 'all').length;
-    const womens = registeredPlayers.filter((p) => p.tournament_id === 'kapl-3-womens' || p.tournament_id === 'all').length;
+    const maleCount = registeredPlayers.filter((p) => p.gender === 'male').length;
+    const femaleCount = registeredPlayers.filter((p) => p.gender === 'female').length;
     const allRounders = registeredPlayers.filter((p) => p.role === 'all_rounder').length;
     const batters = registeredPlayers.filter((p) => p.role === 'batter').length;
     const bowlers = registeredPlayers.filter((p) => p.role === 'bowler').length;
     const keepers = registeredPlayers.filter((p) => p.role === 'wicket_keeper').length;
 
-    return { total, paid, pending, mens, womens, allRounders, batters, bowlers, keepers };
+    return { total, paid, pending, maleCount, femaleCount, allRounders, batters, bowlers, keepers };
   }, [registeredPlayers]);
 
   const hasActiveFilters = Boolean(
     rosterSearch.trim() ||
     rosterRoleFilter !== 'all' ||
-    rosterTournamentFilter !== 'all' ||
+    rosterGenderFilter !== 'all' ||
     rosterStatusFilter !== 'all' ||
     rosterSortBy !== 'newest'
   );
@@ -545,7 +594,7 @@ export default function App() {
   const handleClearFilters = () => {
     setRosterSearch('');
     setRosterRoleFilter('all');
-    setRosterTournamentFilter('all');
+    setRosterGenderFilter('all');
     setRosterStatusFilter('all');
     setRosterSortBy('newest');
   };
@@ -561,14 +610,14 @@ export default function App() {
         const matchesTeam = p.previous_team?.toLowerCase().includes(q);
         const matchesPhone = p.mobile_number?.toLowerCase().includes(q);
         const matchesUtr = p.transaction_id?.toLowerCase().includes(q);
-        if (!matchesName && !matchesJersey && !matchesId && !matchesTeam && !matchesPhone && !matchesUtr) {
+        const matchesFlat = p.flat_no?.toLowerCase().includes(q);
+        const matchesAge = p.age && String(p.age).toLowerCase().includes(q);
+        if (!matchesName && !matchesJersey && !matchesId && !matchesTeam && !matchesPhone && !matchesUtr && !matchesFlat && !matchesAge) {
           return false;
         }
       }
       if (rosterRoleFilter !== 'all' && p.role !== rosterRoleFilter) return false;
-      if (rosterTournamentFilter !== 'all') {
-        if (p.tournament_id && p.tournament_id !== 'all' && p.tournament_id !== rosterTournamentFilter) return false;
-      }
+      if (rosterGenderFilter !== 'all' && p.gender !== rosterGenderFilter) return false;
       if (rosterStatusFilter !== 'all') {
         const isPaid = p.payment_status === 'paid';
         if (rosterStatusFilter === 'paid' && !isPaid) return false;
@@ -756,7 +805,7 @@ export default function App() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-400">
-                    Jersey #{jerseyNumber || '-'} • Base Price: ₹100 • {getTournamentLabel(tournamentId, true)}
+                    {gender === 'female' ? '👩 Female' : '👨 Male'} • Flat: {flatNo || '-'} • Age: {age || '-'} • Base Price: ₹100
                   </p>
                   <div className="pt-0.5">
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
@@ -819,41 +868,41 @@ export default function App() {
                 </div>
               )}
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* 1. Tournament Division */}
-                <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-6 space-y-4">
-                  <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
-                    <Trophy className="w-5 h-5" />
-                    <span>1. Tournament League</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {[
-                      { id: 'kapl-3-mens', label: "Men's League", icon: '🏏', desc: 'Premier Mens Draft' },
-                      { id: 'kapl-3-womens', label: "Women's League", icon: '👑', desc: 'Premier Womens Draft' },
-                      { id: 'all', label: 'Dual Draft', icon: '⚡', desc: 'Both League Pools' },
-                    ].map((div) => (
-                      <div
-                        key={div.id}
-                        onClick={() => setTournamentId(div.id)}
-                        className={cn(
-                          'p-4 rounded-2xl border cursor-pointer transition-all text-center space-y-1',
-                          tournamentId === div.id
-                            ? 'border-amber-500 bg-amber-500/15 shadow-md shadow-amber-500/10 ring-2 ring-amber-500/30'
-                            : 'border-white/10 bg-white/[0.02] hover:border-white/20'
-                        )}
-                      >
-                        <span className="text-2xl">{div.icon}</span>
-                        <h4 className="text-sm font-bold text-white">{div.label}</h4>
-                        <p className="text-[11px] text-slate-400">{div.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 2. Personal & Contact Details */}
+                {/* 1. Player Information */}
                 <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-6 space-y-4">
                   <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
                     <User className="w-5 h-5" />
-                    <span>2. Player Information</span>
+                    <span>1. Player Information</span>
+                  </div>
+
+                  {/* Gender Selector: Male / Female */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-200">
+                      Gender <span className="text-red-400">*</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { id: 'male', label: 'Male', icon: '👨' },
+                        { id: 'female', label: 'Female', icon: '👩' },
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setGender(item.id as 'male' | 'female')}
+                          className={cn(
+                            'p-3.5 rounded-2xl border font-bold text-sm transition-all flex items-center justify-center gap-2',
+                            gender === item.id
+                              ? 'border-amber-400 bg-amber-500/15 text-white ring-2 ring-amber-400/40 shadow-md shadow-amber-500/10'
+                              : 'border-white/10 bg-white/[0.02] text-slate-400 hover:border-white/20 hover:text-white'
+                          )}
+                        >
+                          <span className="text-xl">{item.icon}</span>
+                          <span>{item.label}</span>
+                          {gender === item.id && <CheckCircle2 className="w-4 h-4 text-amber-400 ml-1" />}
+                        </button>
+                      ))}
+                    </div>
+                    {errors.gender && <p className="text-xs text-red-400">{errors.gender}</p>}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -886,37 +935,54 @@ export default function App() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-200">Email Address (Optional)</label>
+                      <label className="text-xs font-bold text-slate-200">
+                        Age <span className="text-red-400">*</span>
+                      </label>
                       <input
-                        type="email"
-                        placeholder="name@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400', errors.email && 'border-red-500')}
+                        type="number"
+                        min="5"
+                        max="99"
+                        placeholder="e.g. 24"
+                        value={age}
+                        onChange={(e) => setAge(e.target.value)}
+                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400', errors.age && 'border-red-500')}
                       />
-                      {errors.email && <p className="text-xs text-red-400">{errors.email}</p>}
+                      {errors.age && <p className="text-xs text-red-400">{errors.age}</p>}
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-200">Preferred Jersey Number</label>
+                      <label className="text-xs font-bold text-slate-200">
+                        Flat No <span className="text-red-400">*</span>
+                      </label>
                       <input
-                        type="number"
-                        min="1"
-                        max="99"
-                        placeholder="e.g. 7, 18, 45"
-                        value={jerseyNumber}
-                        onChange={(e) => setJerseyNumber(e.target.value)}
-                        className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                        type="text"
+                        placeholder="e.g. A-101"
+                        value={flatNo}
+                        onChange={(e) => setFlatNo(e.target.value)}
+                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400', errors.flatNo && 'border-red-500')}
                       />
+                      {errors.flatNo && <p className="text-xs text-red-400">{errors.flatNo}</p>}
                     </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-200">Email Address (Optional)</label>
+                    <input
+                      type="email"
+                      placeholder="name@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400', errors.email && 'border-red-500')}
+                    />
+                    {errors.email && <p className="text-xs text-red-400">{errors.email}</p>}
                   </div>
                 </div>
 
-                {/* 3. Playing Role & Style */}
+                {/* 2. Playing Role & Style */}
                 <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-6 space-y-4">
                   <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
                     <Flame className="w-5 h-5" />
-                    <span>3. Playing Role & Style</span>
+                    <span>2. Playing Role & Style</span>
                   </div>
 
                   <div className="space-y-2">
@@ -977,11 +1043,11 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 4. Experience & Previous Team */}
+                {/* 3. Experience & Previous Team */}
                 <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-6 space-y-4">
                   <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
                     <Award className="w-5 h-5" />
-                    <span>4. Experience & Previous Team</span>
+                    <span>3. Experience & Previous Team</span>
                   </div>
 
                   <div className="space-y-1.5">
@@ -1037,11 +1103,11 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 5. Photo & Bio */}
+                {/* 4. Photo & Bio */}
                 <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-6 space-y-4">
                   <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
                     <Sparkles className="w-5 h-5" />
-                    <span>5. Profile Avatar & Bio</span>
+                    <span>4. Profile Avatar & Bio</span>
                   </div>
 
                   <div className="space-y-2">
@@ -1110,12 +1176,12 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 6. PAYMENT & SCANNER SECTION (Special Requirement) */}
+                {/* 5. PAYMENT & SCANNER SECTION */}
                 <div className="rounded-3xl border-2 border-amber-500/40 bg-gradient-to-b from-[#151926] to-[#0A0D15] p-6 space-y-5 shadow-xl shadow-amber-500/10">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
                       <CreditCard className="w-5 h-5" />
-                      <span>6. Registration Fee & Payment Scanner</span>
+                      <span>5. Registration Fee & Payment Scanner</span>
                     </div>
                     <span className="text-xs font-black px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
                       ₹{REGISTRATION_ENTRY_FEE} ENTRY FEE
@@ -1127,7 +1193,7 @@ export default function App() {
                     <div>
                       <h4 className="font-bold text-amber-300">Tournament Player Registration Kit</h4>
                       <p className="text-slate-400 mt-0.5">
-                        Includes customized team jersey with your preferred number, match balls, and Mega Auction draft entry.
+                        Includes official tournament match kit, match balls, and Mega Auction draft entry.
                       </p>
                     </div>
                     <span className="text-xl font-black text-amber-400 shrink-0">₹{REGISTRATION_ENTRY_FEE}</span>
@@ -1324,8 +1390,8 @@ export default function App() {
                     ₹100 BASE
                   </span>
                 </div>
-                <div className="absolute top-3 right-3 font-mono text-xs font-black text-amber-300">
-                  #{jerseyNumber || '??'}
+                <div className="absolute top-3 right-3 font-mono text-xs font-black text-amber-300 bg-black/60 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+                  {flatNo ? `Flat ${flatNo}` : 'Flat A-101'}
                 </div>
 
                 {/* Avatar */}
@@ -1348,9 +1414,19 @@ export default function App() {
                     <span className={cn('text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-lg border', getRoleBadge(role).cls)}>
                       {getRoleBadge(role).icon} {role.replace('_', ' ')}
                     </span>
-                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/40">
-                      {getTournamentLabel(tournamentId, true)}
+                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg bg-white/[0.04] text-slate-300 border border-white/10">
+                      {gender === 'female' ? '👩 Female' : '👨 Male'}
                     </span>
+                    {age && (
+                      <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                        Age: {age}
+                      </span>
+                    )}
+                    {flatNo && (
+                      <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg bg-white/[0.04] text-slate-300 border border-white/10">
+                        {flatNo}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -1558,8 +1634,8 @@ export default function App() {
                 </div>
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400 font-medium">Men's / Women's</span>
-                    <span className="text-white font-bold">{rosterStats.mens} / {rosterStats.womens}</span>
+                    <span className="text-slate-400 font-medium">Male / Female</span>
+                    <span className="text-white font-bold">{rosterStats.maleCount} / {rosterStats.femaleCount}</span>
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
                     <span>👑 {rosterStats.allRounders}</span>
@@ -1578,7 +1654,7 @@ export default function App() {
                 <div className="relative flex-1">
                   <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400 pointer-events-none" />
                   <input
-                    placeholder="Search by name, jersey, team, phone, or UTR..."
+                    placeholder="Search by name, flat no (e.g. A-101), age, team, phone, or UTR..."
                     value={rosterSearch}
                     onChange={(e) => setRosterSearch(e.target.value)}
                     className="w-full rounded-2xl bg-black/40 border border-white/10 pl-10 pr-9 h-11 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-colors"
@@ -1622,9 +1698,9 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Row 2: Filter Pills (Status, League, Role) */}
+              {/* Row 2: Filter Pills (Status, Gender, Role) */}
               <div className="flex flex-col gap-2.5 pt-1 border-t border-white/[0.05]">
-                {/* League & Status filter row */}
+                {/* Gender & Status filter row */}
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   {/* Status Pills */}
                   <div className="flex flex-wrap items-center gap-1.5">
@@ -1666,20 +1742,20 @@ export default function App() {
                     </button>
                   </div>
 
-                  {/* League Pills */}
+                  {/* Gender Pills */}
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">League:</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Gender:</span>
                     {[
-                      { id: 'all', label: 'All Leagues' },
-                      { id: 'kapl-3-mens', label: "🏆 Men's" },
-                      { id: 'kapl-3-womens', label: "🏆 Women's" },
+                      { id: 'all', label: `All (${rosterStats.total})` },
+                      { id: 'male', label: `👨 Male (${rosterStats.maleCount})` },
+                      { id: 'female', label: `👩 Female (${rosterStats.femaleCount})` },
                     ].map((chip) => (
                       <button
                         key={chip.id}
-                        onClick={() => setRosterTournamentFilter(chip.id)}
+                        onClick={() => setRosterGenderFilter(chip.id as any)}
                         className={cn(
                           'px-2.5 py-1 rounded-xl text-xs font-bold transition-all',
-                          rosterTournamentFilter === chip.id
+                          rosterGenderFilter === chip.id
                             ? 'bg-amber-500 text-black shadow-sm'
                             : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
                         )}
@@ -1769,14 +1845,18 @@ export default function App() {
                           : 'border-white/[0.08] bg-[#0E1320]/80 hover:border-amber-400/50 hover:bg-[#121829] hover:shadow-xl hover:shadow-black/50 hover:-translate-y-0.5'
                       )}
                     >
-                      {/* Jersey badge top-right */}
+                      {/* Flat No / Badges top-right */}
                       <div className="absolute top-3 right-3 flex items-center gap-1.5">
                         {isNewlyRegistered && (
                           <span className="bg-amber-400 text-black font-black text-[10px] px-2 py-0.5 rounded-full animate-pulse shadow-sm">
                             ⭐ YOU
                           </span>
                         )}
-                        {player.jersey_number ? (
+                        {player.flat_no ? (
+                          <span className="bg-black/60 border border-amber-500/30 text-amber-300 font-mono font-bold text-xs px-2.5 py-0.5 rounded-full">
+                            Flat {player.flat_no}
+                          </span>
+                        ) : player.jersey_number ? (
                           <span className="bg-black/60 border border-amber-500/30 text-amber-400 font-mono font-black text-xs px-2.5 py-0.5 rounded-full">
                             #{player.jersey_number}
                           </span>
@@ -1801,9 +1881,14 @@ export default function App() {
                             <span className={cn('text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg border', getRoleBadge(player.role).cls)}>
                               {getRoleBadge(player.role).icon} {player.role?.replace('_', ' ')}
                             </span>
-                            <span className="text-[10px] px-2 py-0.5 rounded-lg border border-white/10 text-slate-400">
-                              {getTournamentLabel(player.tournament_id)}
+                            <span className="text-[10px] px-2 py-0.5 rounded-lg border border-white/10 text-slate-300">
+                              {player.gender === 'female' ? '👩 Female' : '👨 Male'}
                             </span>
+                            {player.age && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-lg border border-amber-500/20 text-amber-300">
+                                Age {player.age}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1875,11 +1960,12 @@ export default function App() {
                     <thead className="bg-white/[0.04] border-b border-white/[0.08] text-slate-400 uppercase text-[10px] font-black tracking-wider">
                       <tr>
                         <th className="py-3.5 px-4">Player</th>
-                        <th className="py-3.5 px-3">Jersey #</th>
+                        <th className="py-3.5 px-3">Gender</th>
+                        <th className="py-3.5 px-3">Age</th>
+                        <th className="py-3.5 px-3">Flat No</th>
                         <th className="py-3.5 px-3">Role</th>
                         <th className="py-3.5 px-3">Batting</th>
                         <th className="py-3.5 px-3">Bowling</th>
-                        <th className="py-3.5 px-3">League</th>
                         <th className="py-3.5 px-3">Franchise / Exp</th>
                         <th className="py-3.5 px-3">Payment</th>
                         <th className="py-3.5 px-3">Registered</th>
@@ -1903,8 +1989,14 @@ export default function App() {
                             </div>
                             <span className="font-semibold text-white">{player.name}</span>
                           </td>
-                          <td className="py-3 px-3 font-mono font-black text-amber-400">
-                            {player.jersey_number ? `#${player.jersey_number}` : '-'}
+                          <td className="py-3 px-3 text-slate-300">
+                            {player.gender === 'female' ? '👩 Female' : '👨 Male'}
+                          </td>
+                          <td className="py-3 px-3 text-amber-300 font-mono font-bold">
+                            {player.age || '-'}
+                          </td>
+                          <td className="py-3 px-3 text-slate-200 font-mono font-bold">
+                            {player.flat_no || (player.jersey_number ? `#${player.jersey_number}` : '-')}
                           </td>
                           <td className="py-3 px-3">
                             <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-lg border', getRoleBadge(player.role).cls)}>
@@ -1913,7 +2005,6 @@ export default function App() {
                           </td>
                           <td className="py-3 px-3 text-slate-300">{player.batting_style || 'Right-hand bat'}</td>
                           <td className="py-3 px-3 text-slate-300">{player.bowling_style || 'None'}</td>
-                          <td className="py-3 px-3 text-slate-300">{getTournamentLabel(player.tournament_id)}</td>
                           <td className="py-3 px-3 text-slate-300 truncate max-w-[140px]">
                             {player.previous_team || (player.experience === 'experienced' ? 'Veteran' : 'New Entrant')}
                           </td>
@@ -1985,7 +2076,12 @@ export default function App() {
                       <h3 className="text-xl sm:text-2xl font-black font-display text-white">
                         {selectedPlayerModal.name}
                       </h3>
-                      {selectedPlayerModal.jersey_number && (
+                      {selectedPlayerModal.flat_no && (
+                        <span className="bg-amber-400/20 text-amber-400 border border-amber-400/40 font-mono font-bold text-xs px-2.5 py-0.5 rounded-full">
+                          Flat {selectedPlayerModal.flat_no}
+                        </span>
+                      )}
+                      {selectedPlayerModal.jersey_number && !selectedPlayerModal.flat_no && (
                         <span className="bg-amber-400/20 text-amber-400 border border-amber-400/40 font-mono font-black text-xs px-2 py-0.5 rounded-full">
                           #{selectedPlayerModal.jersey_number}
                         </span>
@@ -1996,8 +2092,13 @@ export default function App() {
                         {getRoleBadge(selectedPlayerModal.role).icon} {selectedPlayerModal.role?.replace('_', ' ')}
                       </span>
                       <span className="text-xs px-2.5 py-0.5 rounded-lg border border-white/10 text-slate-300">
-                        {getTournamentLabel(selectedPlayerModal.tournament_id, true)}
+                        {selectedPlayerModal.gender === 'female' ? '👩 Female' : '👨 Male'}
                       </span>
+                      {selectedPlayerModal.age && (
+                        <span className="text-xs px-2.5 py-0.5 rounded-lg border border-amber-500/30 text-amber-300">
+                          Age: {selectedPlayerModal.age}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2011,23 +2112,37 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Cricket Specifications Grid */}
+              {/* Cricket & Player Specifications Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
                 <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Batting Style</span>
-                  <span className="font-semibold text-white mt-0.5 block">{selectedPlayerModal.batting_style || 'Right-hand'}</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Gender</span>
+                  <span className="font-semibold text-white mt-0.5 block capitalize">
+                    {selectedPlayerModal.gender === 'female' ? 'Female' : 'Male'}
+                  </span>
                 </div>
                 <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Bowling Style</span>
-                  <span className="font-semibold text-white mt-0.5 block">{selectedPlayerModal.bowling_style || 'None'}</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Age</span>
+                  <span className="font-semibold text-amber-400 mt-0.5 block font-mono">
+                    {selectedPlayerModal.age ? `${selectedPlayerModal.age} yrs` : 'Not recorded'}
+                  </span>
+                </div>
+                <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Flat / Unit</span>
+                  <span className="font-semibold text-amber-300 mt-0.5 block font-mono">
+                    {selectedPlayerModal.flat_no || 'Not recorded'}
+                  </span>
                 </div>
                 <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
                   <span className="text-[10px] uppercase font-bold text-slate-400 block">Base Price</span>
-                  <span className="font-semibold text-amber-400 mt-0.5 block font-mono">₹{selectedPlayerModal.base_price || 100}</span>
+                  <span className="font-semibold text-emerald-400 mt-0.5 block font-mono">₹{selectedPlayerModal.base_price || 100}</span>
                 </div>
-                <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Gender</span>
-                  <span className="font-semibold text-white mt-0.5 block capitalize">{selectedPlayerModal.gender || 'Not specified'}</span>
+                <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] sm:col-span-2">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Batting Style</span>
+                  <span className="font-semibold text-white mt-0.5 block">{selectedPlayerModal.batting_style || 'Right-hand'}</span>
+                </div>
+                <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] sm:col-span-2">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Bowling Style</span>
+                  <span className="font-semibold text-white mt-0.5 block">{selectedPlayerModal.bowling_style || 'None'}</span>
                 </div>
               </div>
 

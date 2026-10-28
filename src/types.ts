@@ -20,6 +20,8 @@ export interface Player {
   past_achievements?: string;
   bio?: string;
   gender?: 'male' | 'female';
+  age?: number | string;
+  flat_no?: string;
   payment_method?: PaymentMethod;
   payment_status?: PaymentStatus;
   transaction_id?: string;
