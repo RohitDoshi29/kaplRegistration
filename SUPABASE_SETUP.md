@@ -62,11 +62,18 @@ create policy "Allow inserts for new players" on players
 create policy "Allow updates to own records" on players
   for update using (true);
 
+-- Allow deletes on records
+create policy "Allow deletes on players" on players
+  for delete using (true);
+
 -- Create index on tournament_id for faster filtering
 create index idx_players_tournament on players(tournament_id);
 
 -- Create index on payment_status for payment queries
 create index idx_players_payment_status on players(payment_status);
+
+-- Enable full replica identity (REQUIRED for Supabase Realtime DELETE events)
+alter table players replica identity full;
 
 -- Enable realtime for live updates
 alter publication supabase_realtime add table players;

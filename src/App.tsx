@@ -164,37 +164,32 @@ export default function App() {
               created_at: p.created_at,
             });
           });
-      }
 
-      // Merge local storage backup registrations (Supabase is authoritative)
-      try {
-        const rawLocal = localStorage.getItem('portal_registered_players');
-        if (rawLocal) {
-          const list: Player[] = JSON.parse(rawLocal);
-          if (Array.isArray(list)) {
-            let updatedLocal = false;
-            list.forEach((p) => {
-              if (p && p.id) {
-                const dbPlayer = map.get(p.id);
-                if (dbPlayer) {
-                  // Supabase is authoritative for status and details
-                  map.set(p.id, { ...p, ...dbPlayer });
-                  if (p.payment_status !== dbPlayer.payment_status) {
-                    p.payment_status = dbPlayer.payment_status;
-                    updatedLocal = true;
-                  }
-                } else {
-                  // Only in localStorage (offline or pending sync)
-                  map.set(p.id, p);
-                }
-              }
-            });
-            if (updatedLocal) {
-              localStorage.setItem('portal_registered_players', JSON.stringify(list));
+        // Prune deleted players from local storage cache so they do not resurrect
+        try {
+          const rawLocal = localStorage.getItem('portal_registered_players');
+          if (rawLocal) {
+            const list: Player[] = JSON.parse(rawLocal);
+            if (Array.isArray(list)) {
+              const activeList = list.filter((p) => map.has(p.id));
+              localStorage.setItem('portal_registered_players', JSON.stringify(activeList));
             }
           }
-        }
-      } catch {}
+        } catch {}
+      } else if (error) {
+        // Fallback to local storage only if database is offline or unreachable
+        try {
+          const rawLocal = localStorage.getItem('portal_registered_players');
+          if (rawLocal) {
+            const list: Player[] = JSON.parse(rawLocal);
+            if (Array.isArray(list)) {
+              list.forEach((p) => {
+                if (p && p.id) map.set(p.id, p);
+              });
+            }
+          }
+        } catch {}
+      }
 
       const sorted = Array.from(map.values()).sort((a, b) => {
         const tA = new Date(a.created_at || 0).getTime();
@@ -203,6 +198,7 @@ export default function App() {
       });
 
       setRegisteredPlayers(sorted);
+      setNewlyRegisteredPlayer((prev) => (prev && map.has(prev.id) ? prev : null));
     } catch (e) {
       console.error('Failed to load roster:', e);
     } finally {
@@ -210,10 +206,11 @@ export default function App() {
     }
   }, []);
 
-  // Initial load and real-time subscription
+  // Initial load, real-time subscription, and active sync
   useEffect(() => {
     fetchRegisteredPlayers();
 
+    // 1. Supabase Postgres Realtime Subscription
     const channel = supabase
       .channel('player-portal-realtime-feed')
       .on(
@@ -225,8 +222,26 @@ export default function App() {
       )
       .subscribe();
 
+    // 2. Window focus & visibility sync (immediately updates when switching back from Supabase dashboard)
+    const handleSync = () => {
+      fetchRegisteredPlayers();
+    };
+    window.addEventListener('focus', handleSync);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        handleSync();
+      }
+    });
+
+    // 3. Periodic fallback poll every 5 seconds
+    const intervalId = setInterval(() => {
+      fetchRegisteredPlayers();
+    }, 5000);
+
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener('focus', handleSync);
+      clearInterval(intervalId);
     };
   }, [fetchRegisteredPlayers]);
 
