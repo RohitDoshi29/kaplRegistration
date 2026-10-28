@@ -1,7 +1,7 @@
 export type PlayerRole = 'batter' | 'bowler' | 'all_rounder' | 'wicket_keeper';
 
-export type PaymentMethod = 'upi_qr' | 'cash' | 'bank_transfer';
-export type PaymentStatus = 'paid' | 'pending' | 'cash_venue';
+export type PaymentMethod = 'upi_qr';
+export type PaymentStatus = 'paid' | 'pending';
 
 export interface Player {
   id: string;
@@ -27,4 +27,3 @@ export interface Player {
   payment_receipt_url?: string;
   created_at?: string;
 }
-

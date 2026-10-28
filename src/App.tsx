@@ -16,7 +16,6 @@ import {
   Award,
   CheckCircle2,
   ArrowRight,
-  Gavel,
   Check,
   AlertCircle,
   HelpCircle,
@@ -66,6 +65,15 @@ const PREVIOUS_TEAMS = [
   "Other / Custom Franchise",
 ];
 
+// Simple UUID v4 generator
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<'register' | 'roster'>('register');
 
@@ -111,13 +119,14 @@ export default function App() {
   const [rosterTournamentFilter, setRosterTournamentFilter] = useState('all');
   const [rosterViewMode, setRosterViewMode] = useState<'grid' | 'table'>('grid');
 
+
   // Fetch all registered players from Supabase
   const fetchRegisteredPlayers = useCallback(async () => {
     setIsLoadingRoster(true);
     try {
       const { data, error } = await supabase
         .from('players')
-        .select('id, name, photo_url, role, batting_style, bowling_style, tournament_id, team_id, jersey_number, base_price, mobile_number, payment_status, created_at')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -141,24 +150,48 @@ export default function App() {
               base_price: Number(p.base_price || 100),
               photo_url: p.photo_url,
               mobile_number: p.mobile_number || '',
+              email: p.email || undefined,
+              experience: p.experience || undefined,
+              previous_team: p.previous_team || undefined,
+              past_achievements: p.past_achievements || undefined,
+              bio: p.bio || undefined,
+              gender: p.gender || undefined,
+              payment_method: p.payment_method || 'upi_qr',
               payment_status: (p.payment_status as PaymentStatus) || 'pending',
+              transaction_id: p.transaction_id || undefined,
+              payment_amount: p.payment_amount || undefined,
+              payment_receipt_url: p.payment_receipt_url || undefined,
               created_at: p.created_at,
             });
           });
       }
 
-      // Merge local storage backup registrations
+      // Merge local storage backup registrations (Supabase is authoritative)
       try {
         const rawLocal = localStorage.getItem('portal_registered_players');
         if (rawLocal) {
           const list: Player[] = JSON.parse(rawLocal);
           if (Array.isArray(list)) {
+            let updatedLocal = false;
             list.forEach((p) => {
               if (p && p.id) {
-                const existing = map.get(p.id);
-                map.set(p.id, { ...(existing || {}), ...p });
+                const dbPlayer = map.get(p.id);
+                if (dbPlayer) {
+                  // Supabase is authoritative for status and details
+                  map.set(p.id, { ...p, ...dbPlayer });
+                  if (p.payment_status !== dbPlayer.payment_status) {
+                    p.payment_status = dbPlayer.payment_status;
+                    updatedLocal = true;
+                  }
+                } else {
+                  // Only in localStorage (offline or pending sync)
+                  map.set(p.id, p);
+                }
               }
             });
+            if (updatedLocal) {
+              localStorage.setItem('portal_registered_players', JSON.stringify(list));
+            }
           }
         }
       } catch {}
@@ -233,6 +266,9 @@ export default function App() {
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errs.email = 'Please enter a valid email address';
     }
+    if (!transactionId.trim()) {
+      errs.transactionId = 'Please enter a UTR (Transaction Reference ID)';
+    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -243,9 +279,9 @@ export default function App() {
     if (!validate()) return;
 
     setIsSubmitting(true);
-    const playerId = `player_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const playerId = generateUUID();
     const computedPaymentStatus: PaymentStatus =
-      paymentMethod === 'cash' ? 'cash_venue' : transactionId.trim() || paymentReceiptUrl ? 'paid' : 'pending';
+      (transactionId.trim() || paymentReceiptUrl.trim()) ? 'paid' : 'pending';
 
     const newPlayer: Player = {
       id: playerId,
@@ -276,7 +312,7 @@ export default function App() {
       // 1. Direct insert to Supabase players table
       const targetTournaments = tournamentId === 'all' ? ['kapl-3-mens', 'kapl-3-womens'] : [tournamentId];
       for (const tId of targetTournaments) {
-        const idForTourn = tId === 'kapl-3-womens' ? `${playerId}_w` : playerId;
+        const idForTourn = tId === 'kapl-3-womens' ? generateUUID() : playerId;
         const { error: insertError } = await supabase.from('players').insert({
           id: idForTourn,
           name: newPlayer.name,
@@ -323,7 +359,13 @@ export default function App() {
 
       // Refresh list
       await fetchRegisteredPlayers();
-    } catch (err) {
+    } catch (err: any) {
+      const errorMsg = err?.message || 'Registration failed. Please try again.';
+      if (errorMsg.includes('duplicate') || errorMsg.includes('mobile_number')) {
+        setErrors({ phone: 'This phone number is already registered' });
+      } else {
+        setErrors({ form: errorMsg });
+      }
       console.error('Registration failed:', err);
     } finally {
       setIsSubmitting(false);
@@ -349,16 +391,19 @@ export default function App() {
   // Export to CSV
   const handleExportCsv = () => {
     if (registeredPlayers.length === 0) return;
-    const headers = ['Player ID', 'Name', 'Role', 'Jersey Number', 'Batting', 'Bowling', 'Tournament', 'Payment Status', 'Registered At'];
+    const headers = ['Player ID', 'Name', 'Phone', 'Email', 'Role', 'Jersey Number', 'Batting', 'Bowling', 'Tournament', 'Payment Status', 'Transaction ID', 'Registered At'];
     const rows = registeredPlayers.map((p) => [
       p.id,
       `"${p.name.replace(/"/g, '""')}"`,
+      p.mobile_number || '-',
+      p.email || '-',
       p.role,
       p.jersey_number || '-',
       p.batting_style || '-',
       p.bowling_style || '-',
       p.tournament_id || '-',
-      p.payment_status || 'paid',
+      p.payment_status || 'pending',
+      p.transaction_id || '-',
       p.created_at || '-',
     ]);
     const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -493,7 +538,7 @@ export default function App() {
               </div>
               <div className="flex items-center justify-between gap-4">
                 <span className="text-slate-400">Payment Option</span>
-                <span className="font-bold text-slate-200">UPI QR / Cash on Venue</span>
+                <span className="font-bold text-slate-200">UPI QR</span>
               </div>
             </div>
           </div>
@@ -543,7 +588,7 @@ export default function App() {
                   <div className="pt-0.5">
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                       <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                      Payment: {paymentMethod === 'cash' ? 'Cash on Match Day' : 'UPI Submitted'}
+                      Payment: UPI Submitted
                     </span>
                   </div>
                 </div>
@@ -591,6 +636,15 @@ export default function App() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-12">
             {/* Form Column */}
             <div className="lg:col-span-7 space-y-6">
+              {errors.form && (
+                <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-4 flex gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-bold text-red-300">Registration Error</h4>
+                    <p className="text-xs text-red-400 mt-1">{errors.form}</p>
+                  </div>
+                </div>
+              )}
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* 1. Tournament Division */}
                 <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-6 space-y-4">
@@ -840,13 +894,35 @@ export default function App() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-200">Or Custom Photo URL</label>
-                    <input
-                      placeholder="https://example.com/photo.jpg"
-                      value={photoUrl}
-                      onChange={(e) => setPhotoUrl(e.target.value)}
-                      className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
-                    />
+                    <label className="text-xs font-bold text-slate-200">Upload or Enter Photo URL</label>
+                    <div className="flex gap-2">
+                      <input
+                        placeholder="https://example.com/photo.jpg"
+                        value={photoUrl}
+                        onChange={(e) => setPhotoUrl(e.target.value)}
+                        className="flex-1 rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                      />
+                      <label className="h-11 px-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 font-bold text-xs flex items-center gap-2 cursor-pointer transition-colors">
+                        <Upload className="w-4 h-4" />
+                        Upload
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              if (event.target?.result) {
+                                setPhotoUrl(event.target.result as string);
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
                   </div>
 
                   <div className="space-y-1.5">
@@ -952,106 +1028,69 @@ export default function App() {
                     </p>
                   </div>
 
-                  {/* Payment Method Selector */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-200">Select Payment Option</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                      {[
-                        { id: 'upi_qr' as PaymentMethod, label: 'UPI QR / App', desc: 'Scan & enter UTR', icon: '⚡' },
-                        { id: 'cash' as PaymentMethod, label: 'Cash on Venue', desc: 'Pay on match day', icon: '💵' },
-                        { id: 'bank_transfer' as PaymentMethod, label: 'Bank Transfer', desc: 'IMPS / NEFT transfer', icon: '🏦' },
-                      ].map((item) => (
-                        <div
-                          key={item.id}
-                          onClick={() => setPaymentMethod(item.id)}
-                          className={cn(
-                            'p-3.5 rounded-2xl border cursor-pointer transition-all space-y-1',
-                            paymentMethod === item.id
-                              ? 'border-amber-500 bg-amber-500/15 shadow-sm ring-2 ring-amber-500/30'
-                              : 'border-white/10 bg-white/[0.02] hover:border-white/20'
-                          )}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-lg">{item.icon}</span>
-                            {paymentMethod === item.id && <Check className="w-4 h-4 text-amber-400" />}
-                          </div>
-                          <h5 className="text-xs font-bold text-white">{item.label}</h5>
-                          <p className="text-[10px] text-slate-400">{item.desc}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
 
                   {/* Transaction ID & Screenshot for UPI */}
-                  {paymentMethod !== 'cash' ? (
-                    <div className="space-y-4 pt-1">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-200">UPI / UTR Transaction Reference</label>
-                          <input
-                            placeholder="e.g. 431289456723 (12-digit UTR)"
-                            value={transactionId}
-                            onChange={(e) => setTransactionId(e.target.value)}
-                            className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
-                          />
-                          <p className="text-[11px] text-slate-400">Available in your GPay / PhonePe payment screen</p>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-200">Account Holder Name</label>
-                          <input
-                            placeholder="Name on bank / UPI account"
-                            value={payerName}
-                            onChange={(e) => setPayerName(e.target.value)}
-                            className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
-                          />
-                        </div>
+                  <div className="space-y-4 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-200">
+                          UPI / UTR Transaction Reference <span className="text-red-400">*</span>
+                        </label>
+                        <input
+                          placeholder="e.g. 431289456723 (12-digit UTR)"
+                          required
+                          value={transactionId}
+                          onChange={(e) => setTransactionId(e.target.value)}
+                          className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400', errors.transactionId && 'border-red-500')}
+                        />
+                        {errors.transactionId && <p className="text-xs text-red-400">{errors.transactionId}</p>}
+                        {!errors.transactionId && <p className="text-[11px] text-slate-400">Available in your GPay / PhonePe payment screen</p>}
                       </div>
 
-                      {/* Screenshot upload */}
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-200">Payment Screenshot / Receipt (Optional)</label>
-                        {paymentReceiptUrl ? (
-                          <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
-                            <div className="flex items-center gap-3">
-                              <img src={paymentReceiptUrl} alt="Receipt thumbnail" className="w-12 h-12 rounded-xl object-cover border border-white/20" />
-                              <div>
-                                <p className="text-xs font-bold text-white truncate max-w-[200px]">{paymentReceiptName || 'receipt.png'}</p>
-                                <span className="text-[10px] text-emerald-400 font-semibold">Screenshot Attached ✓</span>
-                              </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-200">Account Holder Name</label>
+                        <input
+                          placeholder="Name on bank / UPI account"
+                          value={payerName}
+                          onChange={(e) => setPayerName(e.target.value)}
+                          className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Screenshot upload */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-200">Payment Screenshot / Receipt (Optional)</label>
+                      {paymentReceiptUrl ? (
+                        <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
+                          <div className="flex items-center gap-3">
+                            <img src={paymentReceiptUrl} alt="Receipt thumbnail" className="w-12 h-12 rounded-xl object-cover border border-white/20" />
+                            <div>
+                              <p className="text-xs font-bold text-white truncate max-w-[200px]">{paymentReceiptName || 'receipt.png'}</p>
+                              <span className="text-[10px] text-emerald-400 font-semibold">Screenshot Attached ✓</span>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPaymentReceiptUrl('');
-                                setPaymentReceiptName('');
-                              }}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-400"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
                           </div>
-                        ) : (
-                          <label className="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.02] hover:bg-white/[0.04] hover:border-amber-500/40 transition-colors cursor-pointer text-center space-y-1">
-                            <Upload className="w-5 h-5 text-amber-400" />
-                            <span className="text-xs font-bold text-white">Upload Payment Screenshot</span>
-                            <span className="text-[10px] text-slate-400">PNG, JPG or WebP</span>
-                            <input type="file" accept="image/*" onChange={handleReceiptUpload} className="hidden" />
-                          </label>
-                        )}
-                      </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPaymentReceiptUrl('');
+                              setPaymentReceiptName('');
+                            }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-400"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.02] hover:bg-white/[0.04] hover:border-amber-500/40 transition-colors cursor-pointer text-center space-y-1">
+                          <Upload className="w-5 h-5 text-amber-400" />
+                          <span className="text-xs font-bold text-white">Upload Payment Screenshot</span>
+                          <span className="text-[10px] text-slate-400">PNG, JPG or WebP</span>
+                          <input type="file" accept="image/*" onChange={handleReceiptUpload} className="hidden" />
+                        </label>
+                      )}
                     </div>
-                  ) : (
-                    <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-left space-y-1">
-                      <div className="flex items-center gap-1.5 font-bold text-emerald-300 text-xs">
-                        <CheckCircle2 className="w-4 h-4" />
-                        Cash on Venue Selected
-                      </div>
-                      <p className="text-[11px] text-slate-400 leading-relaxed">
-                        Pay the ₹500 fee at the tournament desk on match day to collect your kit and jersey.
-                      </p>
-                    </div>
-                  )}
+                  </div>
                 </div>
 
                 {/* Submit Button */}
@@ -1142,10 +1181,10 @@ export default function App() {
                 <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-left flex items-center justify-between text-xs">
                   <div>
                     <span className="text-[10px] uppercase font-bold text-emerald-400 block">Entry Fee</span>
-                    <span className="font-bold text-white">₹{REGISTRATION_ENTRY_FEE} • {paymentMethod === 'cash' ? 'Cash on Venue' : 'UPI Payment'}</span>
+                    <span className="font-bold text-white">₹{REGISTRATION_ENTRY_FEE} • UPI Payment</span>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
-                    {transactionId ? 'UTR Attached ✓' : paymentMethod === 'cash' ? 'Pay on Venue' : 'Payment Ready'}
+                    {transactionId ? 'UTR Attached ✓' : 'Payment Ready'}
                   </span>
                 </div>
 
@@ -1377,12 +1416,21 @@ export default function App() {
                       </div>
 
                       <div className="flex items-center justify-between pt-1 border-t border-white/[0.06] text-[10px]">
-                        <span className="text-emerald-400 font-bold flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                          {player.payment_status === 'cash_venue' ? 'Cash on Venue' : 'Paid & Verified'}
+                        <span className={cn('font-bold flex items-center gap-1', player.payment_status === 'paid' ? 'text-emerald-400' : 'text-amber-400')}>
+                          {player.payment_status === 'paid' ? (
+                            <>
+                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                              Payment: Verified ✓
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3 h-3 text-amber-400" />
+                              Payment: Pending
+                            </>
+                          )}
                         </span>
                         <span className="font-mono text-slate-400">
-                          {player.created_at ? new Date(player.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : 'Verified'}
+                          {player.created_at ? new Date(player.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : ''}
                         </span>
                       </div>
                     </div>
@@ -1430,11 +1478,13 @@ export default function App() {
                           <td className="py-3 px-3 text-slate-300">{player.batting_style || 'Right-hand bat'}</td>
                           <td className="py-3 px-3 text-slate-300">{player.bowling_style || 'None'}</td>
                           <td className="py-3 px-3 text-slate-300">{player.tournament_id === 'kapl-3-womens' ? "Women's" : "Men's"}</td>
-                          <td className="py-3 px-3 text-emerald-400 font-semibold">
-                            {player.payment_status === 'cash_venue' ? 'Cash on Venue' : 'Paid & Verified'}
+                          <td className="py-3 px-3">
+                            <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-lg border inline-flex items-center gap-1', player.payment_status === 'paid' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40')}>
+                              {player.payment_status === 'paid' ? 'Verified ✓' : 'Pending'}
+                            </span>
                           </td>
                           <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">
-                            {player.created_at ? new Date(player.created_at).toLocaleDateString('en-IN') : 'Verified'}
+                            {player.created_at ? new Date(player.created_at).toLocaleDateString('en-IN') : ''}
                           </td>
                         </tr>
                       ))}
