@@ -39,7 +39,7 @@ import {
 const OFFICIAL_UPI_ID = 'kapl3@upi';
 const OFFICIAL_PAYEE_NAME = 'Premier League 3.0';
 const REGISTRATION_ENTRY_FEE = 500;
-const OFFICIAL_SCANNER_IMG = '/images/scanner.png';
+const OFFICIAL_SCANNER_IMG = '/images/scanner-placeholder.svg'; // When official QR image is added, set to '/images/scanner.png'
 const PLACEHOLDER_SCANNER_SVG = '/images/scanner-placeholder.svg';
 
 const AVATAR_PRESETS = [
@@ -295,8 +295,7 @@ export default function App() {
 
     setIsSubmitting(true);
     const playerId = generateUUID();
-    const computedPaymentStatus: PaymentStatus =
-      (transactionId.trim() || paymentReceiptUrl.trim()) ? 'paid' : 'pending';
+    const computedPaymentStatus: PaymentStatus = 'pending';
 
     const newPlayer: Player = {
       id: playerId,
@@ -325,30 +324,32 @@ export default function App() {
 
     try {
       // 1. Direct insert to Supabase players table
-      const targetTournaments = tournamentId === 'all' ? ['kapl-3-mens', 'kapl-3-womens'] : [tournamentId];
-      for (const tId of targetTournaments) {
-        const idForTourn = tId === 'kapl-3-womens' ? generateUUID() : playerId;
-        const { error: insertError } = await supabase.from('players').insert({
-          id: idForTourn,
-          name: newPlayer.name,
-          photo_url: newPlayer.photo_url,
-          role: newPlayer.role,
-          batting_style: newPlayer.batting_style,
-          bowling_style: newPlayer.bowling_style,
-          jersey_number: newPlayer.jersey_number,
-          mobile_number: newPlayer.mobile_number,
-          email: newPlayer.email,
-          experience: newPlayer.experience,
-          previous_team: newPlayer.previous_team,
-          payment_method: newPlayer.payment_method,
-          payment_status: newPlayer.payment_status,
-          transaction_id: newPlayer.transaction_id,
-          tournament_id: tId,
-          base_price: 100,
-        });
-        if (insertError) {
-          throw new Error(`Failed to insert player for ${tId}: ${insertError.message}`);
-        }
+      const { error: insertError } = await supabase.from('players').insert({
+        id: playerId,
+        name: newPlayer.name,
+        photo_url: newPlayer.photo_url,
+        role: newPlayer.role,
+        batting_style: newPlayer.batting_style,
+        bowling_style: newPlayer.bowling_style,
+        jersey_number: newPlayer.jersey_number,
+        mobile_number: newPlayer.mobile_number,
+        email: newPlayer.email,
+        experience: newPlayer.experience,
+        previous_team: newPlayer.previous_team,
+        past_achievements: newPlayer.past_achievements,
+        bio: newPlayer.bio,
+        gender: newPlayer.gender,
+        payment_method: newPlayer.payment_method,
+        payment_status: newPlayer.payment_status,
+        transaction_id: newPlayer.transaction_id,
+        payment_amount: newPlayer.payment_amount,
+        payment_receipt_url: newPlayer.payment_receipt_url,
+        tournament_id: tournamentId,
+        base_price: 100,
+      });
+
+      if (insertError) {
+        throw new Error(insertError.message);
       }
 
       // 2. Local storage persistence
@@ -462,6 +463,13 @@ export default function App() {
       default:
         return { label: 'All-Rounder', icon: '👑', cls: 'bg-amber-500/20 text-amber-300 border-amber-500/40' };
     }
+  };
+
+  // Tournament label helper
+  const getTournamentLabel = (tId?: string, full = false) => {
+    if (tId === 'kapl-3-womens') return full ? "Women's League" : "Women's";
+    if (tId === 'all') return full ? "Dual Draft (Both Leagues)" : "Dual Draft";
+    return full ? "Men's League" : "Men's";
   };
 
   return (
@@ -598,7 +606,7 @@ export default function App() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-400">
-                    Jersey #{jerseyNumber || '-'} • Base Price: ₹100 • {tournamentId === 'kapl-3-womens' ? "Women's League" : "Men's League"}
+                    Jersey #{jerseyNumber || '-'} • Base Price: ₹100 • {getTournamentLabel(tournamentId, true)}
                   </p>
                   <div className="pt-0.5">
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
@@ -1175,7 +1183,7 @@ export default function App() {
                       {getRoleBadge(role).icon} {role.replace('_', ' ')}
                     </span>
                     <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/40">
-                      {tournamentId === 'kapl-3-womens' ? "Women's League" : "Men's League"}
+                      {getTournamentLabel(tournamentId, true)}
                     </span>
                   </div>
                 </div>
@@ -1413,7 +1421,7 @@ export default function App() {
                               {getRoleBadge(player.role).icon} {player.role?.replace('_', ' ')}
                             </span>
                             <span className="text-[10px] px-2 py-0.5 rounded-lg border border-white/10 text-slate-400">
-                              {player.tournament_id === 'kapl-3-womens' ? "Women's" : "Men's"}
+                              {getTournamentLabel(player.tournament_id)}
                             </span>
                           </div>
                         </div>
@@ -1492,7 +1500,7 @@ export default function App() {
                           </td>
                           <td className="py-3 px-3 text-slate-300">{player.batting_style || 'Right-hand bat'}</td>
                           <td className="py-3 px-3 text-slate-300">{player.bowling_style || 'None'}</td>
-                          <td className="py-3 px-3 text-slate-300">{player.tournament_id === 'kapl-3-womens' ? "Women's" : "Men's"}</td>
+                          <td className="py-3 px-3 text-slate-300">{getTournamentLabel(player.tournament_id)}</td>
                           <td className="py-3 px-3">
                             <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-lg border inline-flex items-center gap-1', player.payment_status === 'paid' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40')}>
                               {player.payment_status === 'paid' ? 'Verified ✓' : 'Pending'}
