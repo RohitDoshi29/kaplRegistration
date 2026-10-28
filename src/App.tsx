@@ -36,10 +36,10 @@ import {
   Radio,
 } from 'lucide-react';
 
-const OFFICIAL_UPI_ID = 'kapl3@upi';
+const OFFICIAL_UPI_ID = 'idb250700481480@idbi';
 const OFFICIAL_PAYEE_NAME = 'Premier League 3.0';
 const REGISTRATION_ENTRY_FEE = 500;
-const OFFICIAL_SCANNER_IMG = '/images/scanner-placeholder.svg'; // When official QR image is added, set to '/images/scanner.png'
+const OFFICIAL_SCANNER_IMG = '/images/scanner.png';
 const PLACEHOLDER_SCANNER_SVG = '/images/scanner-placeholder.svg';
 
 const AVATAR_PRESETS = [

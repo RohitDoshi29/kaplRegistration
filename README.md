@@ -10,7 +10,7 @@ Official tournament player registration and live roster web application for KAPL
 - **Live Official Player Card**: Interactive preview that dynamically updates in real time as the player fills out the form.
 - **Registration Fee & UPI Payment**:
   - Integrated QR scanner with laser scanning animation.
-  - One-click UPI ID copy (`kapl3@upi`).
+  - One-click UPI ID copy (`idb250700481480@idbi`).
   - Support for UPI QR, Cash on Venue, and Bank Transfer with transaction reference (UTR) and screenshot upload.
 - **Live Tournament Roster**:
   - Real-time updates via Supabase Postgres changes subscription.
