@@ -70,6 +70,20 @@ const generateUUID = () => {
   });
 };
 
+// Formatter for Playing Experience labels
+const formatExperienceLabel = (exp?: string) => {
+  if (!exp) return 'New Player';
+  if (exp === 'season_1') return 'Season 1 Player';
+  if (exp === 'season_2') return 'Season 2 Player';
+  if (exp === 'both_seasons') return 'Season 1 & 2 Player';
+  if (exp === 'new_player' || exp === 'new') return 'New Player';
+  if (exp === 'casual') return 'Casual Player';
+  if (exp === 'semi_professional') return 'Semi-Pro';
+  if (exp === 'professional') return 'Pro Player';
+  if (exp === 'experienced') return 'Veteran Player';
+  return exp;
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<'register' | 'roster'>('register');
 
@@ -89,7 +103,7 @@ export default function App() {
   const [bio, setBio] = useState('');
 
   // Experience / History
-  const [experience, setExperience] = useState('new');
+  const [experience, setExperience] = useState('new_player');
   const [previousTeam, setPreviousTeam] = useState('');
   const [customPreviousTeam, setCustomPreviousTeam] = useState('');
   const [pastAchievements, setPastAchievements] = useState('');
@@ -406,7 +420,7 @@ export default function App() {
       base_price: 100,
       photo_url: photoUrl.trim() || null,
       experience,
-      previous_team: experience !== 'new' ? (previousTeam === 'Other / Custom Franchise' ? customPreviousTeam : previousTeam) : undefined,
+      previous_team: (experience !== 'new_player' && experience !== 'new') ? (previousTeam === 'Other / Custom Franchise' ? customPreviousTeam : previousTeam) : undefined,
       past_achievements: pastAchievements.trim() || undefined,
       bio: bio.trim() || undefined,
       gender,
@@ -516,6 +530,10 @@ export default function App() {
     setJerseyNumber('');
     setPhotoUrl('');
     setBio('');
+    setExperience('new_player');
+    setPreviousTeam('');
+    setCustomPreviousTeam('');
+    setPastAchievements('');
     setTransactionId('');
     setPaymentReceiptUrl('');
     setPaymentReceiptName('');
@@ -525,7 +543,7 @@ export default function App() {
   // Export to CSV
   const handleExportCsv = () => {
     if (registeredPlayers.length === 0) return;
-    const headers = ['Player ID', 'Name', 'Phone', 'Gender', 'Age', 'Flat No', 'Email', 'Role', 'Batting', 'Bowling', 'Previous Team', 'Payment Status', 'Transaction ID', 'Registered At'];
+    const headers = ['Player ID', 'Name', 'Phone', 'Gender', 'Age', 'Flat No', 'Email', 'Role', 'Batting', 'Bowling', 'Experience', 'Previous Team', 'Payment Status', 'Transaction ID', 'Registered At'];
     const rows = registeredPlayers.map((p) => [
       p.id,
       `"${p.name.replace(/"/g, '""')}"`,
@@ -537,7 +555,8 @@ export default function App() {
       p.role,
       p.batting_style || '-',
       p.bowling_style || '-',
-      p.previous_team || '-',
+      `"${formatExperienceLabel(p.experience)}"`,
+      `"${(p.previous_team || '-').replace(/"/g, '""')}"`,
       p.payment_status || 'pending',
       p.transaction_id || '-',
       p.created_at || '-',
@@ -1043,17 +1062,24 @@ export default function App() {
                     <label className="text-xs font-bold text-slate-200">Playing Experience</label>
                     <select
                       value={experience}
-                      onChange={(e) => setExperience(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setExperience(val);
+                        if (val === 'new_player') {
+                          setPreviousTeam('');
+                          setCustomPreviousTeam('');
+                        }
+                      }}
                       className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
                     >
-                      <option value="new" className="bg-[#0E1320]">New to Cricket</option>
-                      <option value="casual" className="bg-[#0E1320]">Casual / Occasional Player</option>
-                      <option value="semi_professional" className="bg-[#0E1320]">Semi-Professional</option>
-                      <option value="professional" className="bg-[#0E1320]">Professional</option>
+                      <option value="season_1" className="bg-[#0E1320]">Season 1 Player</option>
+                      <option value="season_2" className="bg-[#0E1320]">Season 2 Player</option>
+                      <option value="both_seasons" className="bg-[#0E1320]">Season 1 & 2 Player (Both)</option>
+                      <option value="new_player" className="bg-[#0E1320]">New Player</option>
                     </select>
                   </div>
 
-                  {experience !== 'new' && (
+                  {experience !== 'new_player' && experience !== 'new' && (
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-200">Previous Team / Franchise</label>
                       <select
@@ -1893,7 +1919,7 @@ export default function App() {
                         <div className="text-[11px] px-2.5 py-1 rounded-xl bg-white/[0.02] border border-white/[0.04] text-slate-400 flex items-center justify-between">
                           <span className="text-[10px] uppercase font-bold">Experience</span>
                           <span className="font-medium text-slate-300">
-                            {player.experience === 'experienced' ? 'Veteran Player' : 'New Draft Entrant'}
+                            {formatExperienceLabel(player.experience)}
                           </span>
                         </div>
                       )}
@@ -1984,7 +2010,7 @@ export default function App() {
                           <td className="py-3 px-3 text-slate-300">{player.batting_style || 'Right-hand bat'}</td>
                           <td className="py-3 px-3 text-slate-300">{player.bowling_style || 'None'}</td>
                           <td className="py-3 px-3 text-slate-300 truncate max-w-[140px]">
-                            {player.previous_team || (player.experience === 'experienced' ? 'Veteran' : 'New Entrant')}
+                            {player.previous_team ? `${player.previous_team} (${formatExperienceLabel(player.experience)})` : formatExperienceLabel(player.experience)}
                           </td>
                           <td className="py-3 px-3">
                             <span
@@ -2128,7 +2154,9 @@ export default function App() {
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] uppercase font-bold text-slate-400">Previous Franchise / Experience</span>
                   <span className="font-bold text-amber-300">
-                    {selectedPlayerModal.previous_team || (selectedPlayerModal.experience === 'experienced' ? 'Veteran Player' : 'First Season / New Entrant')}
+                    {selectedPlayerModal.previous_team
+                      ? `${selectedPlayerModal.previous_team} • ${formatExperienceLabel(selectedPlayerModal.experience)}`
+                      : formatExperienceLabel(selectedPlayerModal.experience)}
                   </span>
                 </div>
                 {selectedPlayerModal.past_achievements && (
