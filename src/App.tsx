@@ -41,6 +41,7 @@ import {
   ChevronRight,
   Hash,
   Calendar,
+  Link2,
 } from 'lucide-react';
 
 const OFFICIAL_UPI_ID = 'idb250700481480@idbi';
@@ -1122,47 +1123,77 @@ export default function App() {
                     <span>4. Profile Photo & Bio</span>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-200">Upload Photo or Enter Image URL</label>
-                    <div className="flex flex-col sm:flex-row gap-2.5">
-                      <label className="w-full sm:w-auto h-11 px-4 rounded-xl border border-amber-500/40 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 active:scale-[0.98] font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all shrink-0">
-                        <Upload className="w-4 h-4 text-amber-400" />
-                        <span>Upload Photo</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onload = (event) => {
-                              if (event.target?.result) {
-                                setPhotoUrl(event.target.result as string);
-                              }
-                            };
-                            reader.readAsDataURL(file);
-                          }}
-                          className="hidden"
-                        />
-                      </label>
+                  <div className="space-y-3">
+                    <label className="text-xs font-bold text-slate-200 block">
+                      Profile Photo (Upload from device or paste image link)
+                    </label>
+
+                    {/* Direct Upload Button */}
+                    <label className="w-full h-12 sm:h-13 px-4 rounded-xl sm:rounded-2xl border border-amber-500/40 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 active:scale-[0.99] font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 cursor-pointer transition-all shadow-sm">
+                      <Upload className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
+                      <span>Upload Photo from Device / Gallery</span>
                       <input
-                        placeholder="https://example.com/photo.jpg (or paste URL)"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            if (event.target?.result) {
+                              setPhotoUrl(event.target.result as string);
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {/* Visual Divider */}
+                    <div className="flex items-center gap-3 py-0.5">
+                      <div className="h-px bg-white/10 flex-1" />
+                      <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">
+                        Or Paste Image Link Below
+                      </span>
+                      <div className="h-px bg-white/10 flex-1" />
+                    </div>
+
+                    {/* Bigger, Roomier Upload Link Text Bar */}
+                    <div className="relative flex items-center">
+                      <Link2 className="w-4 h-4 sm:w-5 sm:h-5 absolute left-3.5 text-amber-400 pointer-events-none" />
+                      <input
+                        type="url"
+                        placeholder="Paste image URL here (e.g. https://.../photo.jpg)"
                         value={photoUrl}
                         onChange={(e) => setPhotoUrl(e.target.value)}
-                        className="w-full flex-1 min-w-0 rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+                        className="w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-black/50 border border-white/15 pl-11 pr-10 text-base sm:text-sm text-white placeholder:text-slate-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all shadow-inner"
                       />
+                      {photoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setPhotoUrl('')}
+                          className="absolute right-3 p-1 rounded-lg text-slate-400 hover:text-white transition-colors"
+                          title="Clear link"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
 
                     {photoUrl && (
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs mt-2">
-                        <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                          <img src={photoUrl} alt="Preview" className="w-8 h-8 rounded-lg object-cover border border-amber-400/40 shrink-0" />
-                          <span className="text-slate-300 text-xs truncate">Profile photo selected</span>
+                      <div className="flex items-center justify-between p-3 rounded-xl sm:rounded-2xl bg-white/[0.04] border border-amber-500/30 text-xs">
+                        <div className="flex items-center gap-3 min-w-0 pr-2">
+                          <img src={photoUrl} alt="Preview" className="w-10 h-10 rounded-xl object-cover border border-amber-400/50 shadow-md shrink-0" />
+                          <div className="min-w-0">
+                            <span className="text-white font-bold text-xs truncate block">Profile photo ready</span>
+                            <span className="text-[11px] text-emerald-400 font-medium">Applied to official player card ✓</span>
+                          </div>
                         </div>
                         <button
                           type="button"
                           onClick={() => setPhotoUrl('')}
-                          className="text-[11px] font-bold text-rose-400 hover:text-rose-300 px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 transition-colors shrink-0"
+                          className="text-xs font-bold text-rose-400 hover:text-rose-300 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 transition-colors shrink-0"
                         >
                           Remove
                         </button>
