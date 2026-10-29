@@ -367,7 +367,8 @@ export default function App() {
       errs.fullName = 'Full name must be at least 2 characters';
       if (!firstInvalidFieldId) firstInvalidFieldId = 'input-fullName';
     }
-    const cleanPhone = phone.replace(/\D/g, '');
+    const rawDigits = phone.replace(/\D/g, '');
+    const cleanPhone = rawDigits.length === 12 && rawDigits.startsWith('91') ? rawDigits.slice(2) : rawDigits;
     if (!cleanPhone || cleanPhone.length < 10) {
       errs.phone = 'Please enter a valid 10-digit mobile number';
       if (!firstInvalidFieldId) firstInvalidFieldId = 'input-phone';
@@ -435,7 +436,8 @@ export default function App() {
     setIsSubmitting(true);
     const playerId = generateUUID();
     const computedPaymentStatus: PaymentStatus = 'pending';
-    const cleanPhone = phone.replace(/\D/g, '');
+    const rawDigits = phone.replace(/\D/g, '');
+    const cleanPhone = rawDigits.length === 12 && rawDigits.startsWith('91') ? rawDigits.slice(2) : rawDigits;
     const numAge = age.trim() ? Number(age) : undefined;
     const cleanFlat = flatNo.trim();
     const bioText = `[Flat: ${cleanFlat} | Age: ${age.trim()}] ${bio.trim()}`.trim();
@@ -542,7 +544,21 @@ export default function App() {
       await fetchRegisteredPlayers();
     } catch (err: any) {
       const errorMsg = err?.message || 'Registration failed. Please try again.';
-      if (errorMsg.includes('duplicate') || errorMsg.includes('mobile_number') || errorMsg.includes('23505')) {
+      console.error('Registration failed:', err);
+
+      if (errorMsg.includes('players_transaction_id_key') || errorMsg.includes('transaction_id')) {
+        setErrors({
+          transactionId: 'This UPI / UTR transaction reference number has already been used',
+          form: 'This UPI / UTR transaction ID has already been submitted for another registration. If you made a new payment, please enter your unique transaction reference ID.',
+        });
+        setTimeout(() => {
+          const el = document.getElementById('input-transactionId');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.focus?.();
+          }
+        }, 100);
+      } else if (errorMsg.includes('players_mobile_number_key') || errorMsg.includes('mobile_number')) {
         setErrors({
           phone: 'This phone number is already registered',
           form: 'This mobile number is already registered in Premier League 3.0. Please enter a different mobile number or contact tournament admin.',
@@ -555,9 +571,12 @@ export default function App() {
           }
         }, 100);
       } else {
-        setErrors({ form: errorMsg });
+        setErrors({
+          form: errorMsg.includes('duplicate')
+            ? `Duplicate entry detected: ${errorMsg}`
+            : errorMsg,
+        });
       }
-      console.error('Registration failed:', err);
     } finally {
       setIsSubmitting(false);
     }
