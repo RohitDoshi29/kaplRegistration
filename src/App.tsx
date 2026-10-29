@@ -723,44 +723,49 @@ export default function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
+      <main className="flex-1 container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
         {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-3xl border border-amber-500/30 bg-gradient-to-br from-[#121624] via-[#0E1320] to-[#080B12] p-6 sm:p-8 shadow-2xl shadow-amber-500/10 mb-8">
-          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div className="space-y-3 max-w-2xl">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  KAPL 3.0 THEME • MEGA AUCTION DRAFT
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-amber-500/30 bg-gradient-to-br from-[#121624] via-[#0E1320] to-[#080B12] p-4 sm:p-7 md:p-8 shadow-xl sm:shadow-2xl shadow-amber-500/10 mb-4 sm:mb-8">
+          <div className="relative z-10 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3.5 sm:gap-6">
+            <div className="space-y-2 sm:space-y-3 max-w-2xl">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300">
+                  <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400" />
+                  KAPL 3.0 • MEGA AUCTION
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                  {registeredPlayers.length} PLAYERS REGISTERED
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-ping" />
+                  {registeredPlayers.length} REGISTERED
                 </span>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black font-display tracking-tight text-white">
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-black font-display tracking-tight text-white leading-tight">
                 Player <span className="text-gradient-gold">Registration</span> & Payment Portal
               </h1>
 
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Official tournament player registration with UPI scan & pay option. All registered players are saved to Supabase and immediately visible in the live tournament roster.
+              <p className="text-[11px] sm:text-sm text-slate-300 leading-snug sm:leading-relaxed">
+                <span className="sm:hidden">
+                  Official tournament player registration with UPI scan & pay. Live synced with Supabase roster.
+                </span>
+                <span className="hidden sm:inline">
+                  Official tournament player registration with UPI scan & pay option. All registered players are saved to Supabase and immediately visible in the live tournament roster.
+                </span>
               </p>
             </div>
 
-            {/* Quick Summary Pill Card */}
-            <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/[0.03] border border-white/10 shrink-0 text-xs">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-slate-400">Tournament Base Price</span>
-                <span className="font-bold text-amber-400">₹100</span>
+            {/* Quick Summary Pill Card - compact horizontal row on mobile, clean column on desktop */}
+            <div className="grid grid-cols-3 md:flex md:flex-col gap-2 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white/[0.03] border border-white/10 shrink-0 text-center md:text-left text-[11px] sm:text-xs">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between md:gap-4">
+                <span className="text-[10px] sm:text-xs text-slate-400">Base Price</span>
+                <span className="font-bold text-amber-400 text-xs sm:text-xs">₹100</span>
               </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-slate-400">Registration Entry Fee</span>
-                <span className="font-bold text-emerald-400">₹500 (Jersey Included)</span>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between md:gap-4 border-x border-white/10 md:border-x-0 px-1 md:px-0">
+                <span className="text-[10px] sm:text-xs text-slate-400">Entry Fee</span>
+                <span className="font-bold text-emerald-400 text-xs sm:text-xs">₹500</span>
               </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-slate-400">Payment Option</span>
-                <span className="font-bold text-slate-200">UPI QR</span>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between md:gap-4">
+                <span className="text-[10px] sm:text-xs text-slate-400">Payment</span>
+                <span className="font-bold text-slate-200 text-xs sm:text-xs">UPI QR</span>
               </div>
             </div>
           </div>
