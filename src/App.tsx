@@ -361,36 +361,66 @@ export default function App() {
   // Validate form
   const validate = () => {
     const errs: Record<string, string> = {};
+    let firstInvalidFieldId: string | null = null;
+
     if (!fullName.trim() || fullName.trim().length < 2) {
       errs.fullName = 'Full name must be at least 2 characters';
+      if (!firstInvalidFieldId) firstInvalidFieldId = 'input-fullName';
     }
     const cleanPhone = phone.replace(/\D/g, '');
     if (!cleanPhone || cleanPhone.length < 10) {
       errs.phone = 'Please enter a valid 10-digit mobile number';
+      if (!firstInvalidFieldId) firstInvalidFieldId = 'input-phone';
     }
     if (!gender) {
       errs.gender = 'Please select male or female';
+      if (!firstInvalidFieldId) firstInvalidFieldId = 'input-gender';
     }
     if (!age.trim()) {
       errs.age = 'Please enter your age';
+      if (!firstInvalidFieldId) firstInvalidFieldId = 'input-age';
     } else {
       const numAge = Number(age);
       if (isNaN(numAge) || numAge < 5 || numAge > 99) {
         errs.age = 'Please enter a valid age (5 - 99)';
+        if (!firstInvalidFieldId) firstInvalidFieldId = 'input-age';
       }
     }
     if (!flatNo.trim()) {
       errs.flatNo = 'Please enter your flat number (e.g. A-101)';
+      if (!firstInvalidFieldId) firstInvalidFieldId = 'input-flatNo';
     }
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errs.email = 'Please enter a valid email address';
+      if (!firstInvalidFieldId) firstInvalidFieldId = 'input-email';
     }
     if (!transactionId.trim()) {
-      errs.transactionId = 'Please enter a UTR (Transaction Reference ID)';
+      errs.transactionId = 'Please enter UPI / UTR Reference number';
+      if (!firstInvalidFieldId) firstInvalidFieldId = 'input-transactionId';
     }
     if (!paymentReceiptUrl) {
       errs.paymentReceipt = 'Payment screenshot is compulsory';
+      if (!firstInvalidFieldId) firstInvalidFieldId = 'input-paymentReceipt';
     }
+
+    if (Object.keys(errs).length > 0) {
+      const errorList = Object.values(errs)
+        .map((msg) => `• ${msg}`)
+        .join('\n');
+      errs.form = `Please complete the required details before submitting:\n${errorList}`;
+
+      // Smoothly scroll to the first invalid field
+      if (firstInvalidFieldId) {
+        setTimeout(() => {
+          const el = document.getElementById(firstInvalidFieldId!);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.focus?.();
+          }
+        }, 100);
+      }
+    }
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -398,7 +428,9 @@ export default function App() {
   // Handle submit and save to Supabase
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      return;
+    }
 
     setIsSubmitting(true);
     const playerId = generateUUID();
@@ -503,12 +535,25 @@ export default function App() {
         });
       } catch {}
 
+      // Scroll to top to see success confirmation
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
       // Refresh list
       await fetchRegisteredPlayers();
     } catch (err: any) {
       const errorMsg = err?.message || 'Registration failed. Please try again.';
-      if (errorMsg.includes('duplicate') || errorMsg.includes('mobile_number')) {
-        setErrors({ phone: 'This phone number is already registered' });
+      if (errorMsg.includes('duplicate') || errorMsg.includes('mobile_number') || errorMsg.includes('23505')) {
+        setErrors({
+          phone: 'This phone number is already registered',
+          form: 'This mobile number is already registered in Premier League 3.0. Please enter a different mobile number or contact tournament admin.',
+        });
+        setTimeout(() => {
+          const el = document.getElementById('input-phone');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.focus?.();
+          }
+        }, 100);
       } else {
         setErrors({ form: errorMsg });
       }
@@ -702,7 +747,10 @@ export default function App() {
           {/* Navigation Pill Switcher */}
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <button
-              onClick={() => setActiveTab('register')}
+              onClick={() => {
+                setActiveTab('register');
+                setRegisteredSuccess(false);
+              }}
               className={cn(
                 'flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all',
                 activeTab === 'register'
@@ -773,6 +821,81 @@ export default function App() {
         {/* ------------------------------------------------------------- */}
         {/* POST-REGISTRATION SUCCESS CONFIRMATION + ALL PLAYERS VISIBLE */}
         {/* ------------------------------------------------------------- */}
+        {/* Success Modal Popup */}
+        {registeredSuccess && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+            <div className="relative overflow-hidden rounded-3xl border-2 border-emerald-500/50 bg-gradient-to-b from-[#0F1E1B] via-[#0D1619] to-[#080B12] p-6 sm:p-10 text-center space-y-6 shadow-2xl shadow-emerald-500/40 max-w-lg w-full scale-in">
+              <button
+                type="button"
+                onClick={() => {
+                  setRegisteredSuccess(false);
+                  setActiveTab('roster');
+                }}
+                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white rounded-xl bg-white/[0.05] hover:bg-white/10 transition-colors"
+                title="Close confirmation"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-black shadow-2xl shadow-emerald-500/40 border border-emerald-300 animate-bounce">
+                <CheckCircle2 className="w-16 h-16 text-black" />
+              </div>
+
+              <div className="space-y-3 max-w-sm mx-auto">
+                <span className="inline-block px-4 py-1.5 rounded-full text-xs uppercase tracking-widest font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  ✓ REGISTRATION CONFIRMED
+                </span>
+                <h2 className="text-3xl sm:text-5xl font-black font-display text-white leading-tight">
+                  Welcome, <span className="text-gradient-gold">{fullName}</span>!
+                </h2>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  Your registration has been successfully saved to the database. Your payment is pending verification by the admin.
+                </p>
+              </div>
+
+              {/* Quick Info */}
+              <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 space-y-2 text-left">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-400">📱 Phone</span>
+                  <span className="font-bold text-white">{phone}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-400">💵 Entry Fee</span>
+                  <span className="font-bold text-amber-400">₹{REGISTRATION_ENTRY_FEE}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-400">⏳ Status</span>
+                  <span className="font-bold text-orange-400">Pending Review</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2">
+                <button
+                  onClick={() => {
+                    setRegisteredSuccess(false);
+                    setActiveTab('roster');
+                  }}
+                  className="w-full h-12 px-6 rounded-2xl font-bold bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-lg shadow-emerald-500/30 hover:from-emerald-600 hover:to-cyan-600 transition-all flex items-center justify-center gap-2"
+                >
+                  <Users className="w-4 h-4" />
+                  View Roster
+                </button>
+                <button
+                  onClick={handleRegisterAnother}
+                  className="w-full h-12 px-6 rounded-2xl font-bold bg-gradient-to-r from-amber-500 to-yellow-500 text-black shadow-lg shadow-amber-500/20 hover:from-amber-600 hover:to-yellow-600 transition-all flex items-center justify-center gap-2"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Register Another Player
+                </button>
+              </div>
+
+              <p className="text-[11px] text-slate-500">
+                Your payment details will be verified by the admin team. You will receive confirmation once verified.
+              </p>
+            </div>
+          </div>
+        )}
+
         {registeredSuccess && (
           <div className="space-y-8 animate-in fade-in duration-300 mb-12">
             <div className="relative overflow-hidden rounded-3xl border-2 border-emerald-500/50 bg-gradient-to-b from-[#0F1E1B] via-[#0D1619] to-[#080B12] p-6 sm:p-10 text-center space-y-6 shadow-2xl shadow-emerald-500/20">
@@ -863,15 +986,15 @@ export default function App() {
             {/* Form Column */}
             <div className="lg:col-span-7 space-y-4 sm:space-y-6">
               {errors.form && (
-                <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-3.5 sm:p-4 flex gap-3">
-                  <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-sm font-bold text-red-300">Registration Error</h4>
-                    <p className="text-xs text-red-400 mt-1">{errors.form}</p>
+                <div className="rounded-2xl bg-red-500/20 border-2 border-red-500/50 p-4 sm:p-5 flex gap-3">
+                  <AlertCircle className="w-6 h-6 text-red-400 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-red-300 mb-2">⚠️ Please Complete These Fields:</h4>
+                    <p className="text-xs text-red-400 whitespace-pre-line leading-relaxed font-mono">{errors.form}</p>
                   </div>
                 </div>
               )}
-              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+              <form noValidate onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                 {/* 1. Player Information */}
                 <div className="rounded-2xl sm:rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-4 sm:p-6 space-y-3.5 sm:space-y-4">
                   <div className="flex items-center gap-2 text-amber-400 font-bold text-sm sm:text-base">
@@ -880,7 +1003,7 @@ export default function App() {
                   </div>
 
                   {/* Gender Selector: Male / Female */}
-                  <div className="space-y-1.5">
+                  <div id="input-gender" className="space-y-1.5 scroll-mt-24">
                     <label className="text-xs font-bold text-slate-200">
                       Gender <span className="text-red-400">*</span>
                     </label>
@@ -915,10 +1038,11 @@ export default function App() {
                         Full Name <span className="text-red-400">*</span>
                       </label>
                       <input
+                        id="input-fullName"
                         placeholder="e.g. Virat Sharma"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400', errors.fullName && 'border-red-500')}
+                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400 scroll-mt-24', errors.fullName && 'border-red-500')}
                       />
                       {errors.fullName && <p className="text-xs text-red-400">{errors.fullName}</p>}
                     </div>
@@ -928,11 +1052,12 @@ export default function App() {
                         Mobile / WhatsApp Number <span className="text-red-400">*</span>
                       </label>
                       <input
+                        id="input-phone"
                         type="tel"
                         placeholder="10-digit mobile number"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400', errors.phone && 'border-red-500')}
+                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400 scroll-mt-24', errors.phone && 'border-red-500')}
                       />
                       {errors.phone && <p className="text-xs text-red-400">{errors.phone}</p>}
                     </div>
@@ -945,13 +1070,14 @@ export default function App() {
                         Age <span className="text-red-400">*</span>
                       </label>
                       <input
+                        id="input-age"
                         type="number"
                         min="5"
                         max="99"
                         placeholder="e.g. 24"
                         value={age}
                         onChange={(e) => setAge(e.target.value)}
-                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400', errors.age && 'border-red-500')}
+                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400 scroll-mt-24', errors.age && 'border-red-500')}
                       />
                       {errors.age && <p className="text-xs text-red-400">{errors.age}</p>}
                     </div>
@@ -961,11 +1087,12 @@ export default function App() {
                         Flat No <span className="text-red-400">*</span>
                       </label>
                       <input
+                        id="input-flatNo"
                         type="text"
                         placeholder="e.g. A-101"
                         value={flatNo}
                         onChange={(e) => setFlatNo(e.target.value)}
-                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400', errors.flatNo && 'border-red-500')}
+                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400 scroll-mt-24', errors.flatNo && 'border-red-500')}
                       />
                       {errors.flatNo && <p className="text-xs text-red-400">{errors.flatNo}</p>}
                     </div>
@@ -974,11 +1101,12 @@ export default function App() {
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-200">Email Address (Optional)</label>
                     <input
+                      id="input-email"
                       type="email"
                       placeholder="name@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400', errors.email && 'border-red-500')}
+                      className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400 scroll-mt-24', errors.email && 'border-red-500')}
                     />
                     {errors.email && <p className="text-xs text-red-400">{errors.email}</p>}
                   </div>
@@ -1312,11 +1440,11 @@ export default function App() {
                           UPI / UTR Reference Number <span className="text-red-400">*</span>
                         </label>
                         <input
+                          id="input-transactionId"
                           placeholder="e.g. 431289456723 (12-digit UTR)"
-                          required
                           value={transactionId}
                           onChange={(e) => setTransactionId(e.target.value)}
-                          className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400', errors.transactionId && 'border-red-500')}
+                          className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400 scroll-mt-24', errors.transactionId && 'border-red-500')}
                         />
                         {errors.transactionId && <p className="text-xs text-red-400">{errors.transactionId}</p>}
                         {!errors.transactionId && <p className="text-[11px] text-slate-400">Available in your GPay / PhonePe payment receipt</p>}
@@ -1334,7 +1462,7 @@ export default function App() {
                     </div>
 
                     {/* Screenshot upload */}
-                    <div className="space-y-2">
+                    <div id="input-paymentReceipt" className="space-y-2 scroll-mt-24">
                       <div className="flex items-center justify-between">
                         <label className="text-xs font-bold text-slate-200">
                           Payment Screenshot / Receipt <span className="text-red-400">*</span>
@@ -1383,6 +1511,21 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+
+                {/* Error Banner above Submit Button */}
+                {errors.form && (
+                  <div className="rounded-2xl bg-rose-500/20 border-2 border-rose-500/50 p-4 sm:p-5 flex items-start gap-3 text-left animate-in fade-in duration-200 shadow-xl shadow-rose-500/10">
+                    <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 space-y-1.5">
+                      <h4 className="text-xs sm:text-sm font-bold text-rose-300">
+                        ⚠️ Please Complete Required Details
+                      </h4>
+                      <p className="text-xs text-rose-200 whitespace-pre-line leading-relaxed font-mono">
+                        {errors.form}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Submit Button */}
                 <button
