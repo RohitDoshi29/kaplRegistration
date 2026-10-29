@@ -49,14 +49,6 @@ const REGISTRATION_ENTRY_FEE = 500;
 const OFFICIAL_SCANNER_IMG = '/images/scanner.png';
 const PLACEHOLDER_SCANNER_SVG = '/images/scanner-placeholder.svg';
 
-const AVATAR_PRESETS = [
-  { label: 'Classic Batter', url: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=200&auto=format&fit=crop&q=80' },
-  { label: 'Pace Bowler', url: 'https://images.unsplash.com/photo-1519766304817-4f37bda74a29?w=200&auto=format&fit=crop&q=80' },
-  { label: 'Captain Gold', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80' },
-  { label: 'All-Rounder', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80' },
-  { label: 'Women Star', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
-];
-
 const PREVIOUS_TEAMS = [
   "Kapil's Warriors",
   "Kapil Falcons",
@@ -684,10 +676,6 @@ export default function App() {
               <span className="text-base sm:text-lg font-black font-display tracking-tight text-white flex items-center gap-1.5">
                 PREMIER LEAGUE <span className="text-gradient-gold">3.0</span>
               </span>
-              <span className="text-[10px] text-emerald-400 font-semibold tracking-wide flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Supabase Connected • Live Registration Portal
-              </span>
             </div>
           </div>
 
@@ -716,7 +704,7 @@ export default function App() {
               )}
             >
               <Users className="w-3.5 h-3.5" />
-              <span>Roster ({registeredPlayers.length})</span>
+              <span>Players ({registeredPlayers.length})</span>
             </button>
           </div>
         </div>
@@ -745,25 +733,21 @@ export default function App() {
 
               <p className="text-[11px] sm:text-sm text-slate-300 leading-snug sm:leading-relaxed">
                 <span className="sm:hidden">
-                  Official tournament player registration with UPI scan & pay. Live synced with Supabase roster.
+                  Official tournament player registration with UPI scan & pay. Live synced with registered players.
                 </span>
                 <span className="hidden sm:inline">
-                  Official tournament player registration with UPI scan & pay option. All registered players are saved to Supabase and immediately visible in the live tournament roster.
+                  Official tournament player registration with UPI scan & pay option. All registered players are saved and immediately visible in the live tournament player list.
                 </span>
               </p>
             </div>
 
             {/* Quick Summary Pill Card - compact horizontal row on mobile, clean column on desktop */}
-            <div className="grid grid-cols-3 md:flex md:flex-col gap-2 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white/[0.03] border border-white/10 shrink-0 text-center md:text-left text-[11px] sm:text-xs">
+            <div className="grid grid-cols-2 md:flex md:flex-col gap-2 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white/[0.03] border border-white/10 shrink-0 text-center md:text-left text-[11px] sm:text-xs">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between md:gap-4">
-                <span className="text-[10px] sm:text-xs text-slate-400">Base Price</span>
-                <span className="font-bold text-amber-400 text-xs sm:text-xs">₹100</span>
-              </div>
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between md:gap-4 border-x border-white/10 md:border-x-0 px-1 md:px-0">
                 <span className="text-[10px] sm:text-xs text-slate-400">Entry Fee</span>
                 <span className="font-bold text-emerald-400 text-xs sm:text-xs">₹500</span>
               </div>
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between md:gap-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between md:gap-4 border-l border-white/10 md:border-l-0 pl-2 md:pl-0">
                 <span className="text-[10px] sm:text-xs text-slate-400">Payment</span>
                 <span className="font-bold text-slate-200 text-xs sm:text-xs">UPI QR</span>
               </div>
@@ -783,13 +767,13 @@ export default function App() {
 
               <div className="space-y-2 max-w-xl mx-auto">
                 <span className="inline-block px-3.5 py-1 rounded-full text-xs uppercase tracking-wider font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                  ✓ REGISTRATION CONFIRMED & SAVED TO SUPABASE
+                  ✓ REGISTRATION CONFIRMED
                 </span>
                 <h2 className="text-3xl sm:text-4xl font-black font-display text-white">
                   Welcome to the League, <span className="text-gradient-gold">{fullName}</span>!
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  Your registration has been stored in Supabase. You can now see yourself along with all registered players in the tournament roster below!
+                  Your registration has been saved. You can now see yourself along with all registered players below!
                 </p>
               </div>
 
@@ -810,7 +794,7 @@ export default function App() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-400">
-                    {gender === 'female' ? '👩 Female' : '👨 Male'} • Flat: {flatNo || '-'} • Age: {age || '-'} • Base Price: ₹100
+                    {gender === 'female' ? '👩 Female' : '👨 Male'} • Flat: {flatNo || '-'} • Age: {age || '-'}
                   </p>
                   <div className="pt-0.5">
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
@@ -835,7 +819,7 @@ export default function App() {
                   className="h-12 px-6 rounded-2xl font-bold border border-white/15 bg-white/[0.04] text-white hover:bg-white/[0.08] flex items-center gap-2"
                 >
                   <Download className="w-4 h-4 text-amber-400" />
-                  Download Roster (CSV)
+                  Download Players (CSV)
                 </button>
               </div>
             </div>
@@ -845,8 +829,8 @@ export default function App() {
               <div className="flex items-center gap-3">
                 <span className="text-2xl">👥</span>
                 <div>
-                  <h4 className="text-sm font-bold text-white">All Registered Players Roster</h4>
-                  <p className="text-xs text-slate-400">All registered players from Supabase are listed below.</p>
+                  <h4 className="text-sm font-bold text-white">All Registered Players</h4>
+                  <p className="text-xs text-slate-400">All registered players are listed below.</p>
                 </div>
               </div>
               <span className="text-xs font-bold text-amber-300 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40">
@@ -1109,46 +1093,18 @@ export default function App() {
                 </div>
 
                 {/* 4. Photo & Bio */}
-                <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-6 space-y-4">
+                <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-4 sm:p-6 space-y-4">
                   <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
                     <Sparkles className="w-5 h-5" />
-                    <span>4. Profile Avatar & Bio</span>
+                    <span>4. Profile Photo & Bio</span>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-200">Choose Preset Avatar</label>
-                    <div className="flex flex-wrap gap-2">
-                      {AVATAR_PRESETS.map((preset) => (
-                        <button
-                          key={preset.label}
-                          type="button"
-                          onClick={() => setPhotoUrl(preset.url)}
-                          className={cn(
-                            'flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all',
-                            photoUrl === preset.url
-                              ? 'border-amber-400 bg-amber-500/20 text-amber-300'
-                              : 'border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/20'
-                          )}
-                        >
-                          <img src={preset.url} alt={preset.label} className="w-5 h-5 rounded-full object-cover" />
-                          <span>{preset.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-200">Upload or Enter Photo URL</label>
-                    <div className="flex gap-2">
-                      <input
-                        placeholder="https://example.com/photo.jpg"
-                        value={photoUrl}
-                        onChange={(e) => setPhotoUrl(e.target.value)}
-                        className="flex-1 rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
-                      />
-                      <label className="h-11 px-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 font-bold text-xs flex items-center gap-2 cursor-pointer transition-colors">
-                        <Upload className="w-4 h-4" />
-                        Upload
+                    <label className="text-xs font-bold text-slate-200">Upload Photo or Enter Image URL</label>
+                    <div className="flex flex-col sm:flex-row gap-2.5">
+                      <label className="w-full sm:w-auto h-11 px-4 rounded-xl border border-amber-500/40 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 active:scale-[0.98] font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all shrink-0">
+                        <Upload className="w-4 h-4 text-amber-400" />
+                        <span>Upload Photo</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -1166,7 +1122,29 @@ export default function App() {
                           className="hidden"
                         />
                       </label>
+                      <input
+                        placeholder="https://example.com/photo.jpg (or paste URL)"
+                        value={photoUrl}
+                        onChange={(e) => setPhotoUrl(e.target.value)}
+                        className="w-full flex-1 min-w-0 rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+                      />
                     </div>
+
+                    {photoUrl && (
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs mt-2">
+                        <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                          <img src={photoUrl} alt="Preview" className="w-8 h-8 rounded-lg object-cover border border-amber-400/40 shrink-0" />
+                          <span className="text-slate-300 text-xs truncate">Profile photo selected</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setPhotoUrl('')}
+                          className="text-[11px] font-bold text-rose-400 hover:text-rose-300 px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 transition-colors shrink-0"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
@@ -1362,7 +1340,7 @@ export default function App() {
                   {isSubmitting ? (
                     <>
                       <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                      Saving to Supabase Database...
+                      Saving Registration...
                     </>
                   ) : (
                     <>
@@ -1389,12 +1367,7 @@ export default function App() {
 
               {/* Trading Card */}
               <div className="relative overflow-hidden rounded-3xl border-2 border-amber-400/50 bg-gradient-to-b from-[#121624] via-[#0E1320] to-black p-6 shadow-2xl shadow-amber-500/20 text-center space-y-5">
-                {/* Corners */}
-                <div className="absolute top-3 left-3">
-                  <span className="bg-amber-500 text-black font-black text-[10px] px-2 py-0.5 rounded-full shadow-sm">
-                    ₹100 BASE
-                  </span>
-                </div>
+                {/* Flat Number Badge top-right */}
                 <div className="absolute top-3 right-3 font-mono text-xs font-black text-amber-300 bg-black/60 px-2.5 py-0.5 rounded-full border border-amber-500/30">
                   {flatNo ? `Flat ${flatNo}` : 'Flat A-101'}
                 </div>
@@ -1460,15 +1433,15 @@ export default function App() {
 
                 <div className="pt-1 text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Real-time Supabase sync & live auction pool</span>
+                  <span>Real-time sync & live tournament pool</span>
                 </div>
               </div>
 
-              {/* View roster CTA */}
+              {/* View players CTA */}
               <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.08] flex items-center justify-between text-xs">
                 <div>
                   <h5 className="font-bold text-white">View Existing Players</h5>
-                  <p className="text-slate-400">{registeredPlayers.length} players registered in database</p>
+                  <p className="text-slate-400">{registeredPlayers.length} players registered</p>
                 </div>
                 <button
                   type="button"
@@ -1476,7 +1449,7 @@ export default function App() {
                   className="px-3.5 py-2 rounded-xl border border-white/15 bg-white/[0.04] text-white hover:bg-white/[0.08] font-bold flex items-center gap-1.5"
                 >
                   <Users className="w-3.5 h-3.5 text-emerald-400" />
-                  View Roster
+                  View Players
                 </button>
               </div>
             </div>
@@ -1484,7 +1457,7 @@ export default function App() {
         )}
 
         {/* ------------------------------------------------------------- */}
-        {/* ALL REGISTERED PLAYERS ROSTER VIEW (Tab 'roster' or on success) */}
+        {/* ALL REGISTERED PLAYERS VIEW (Tab 'roster' or on success) */}
         {/* ------------------------------------------------------------- */}
         {(activeTab === 'roster' || registeredSuccess) && (
           <div className="space-y-6 pt-2 animate-in fade-in duration-300">
@@ -1494,16 +1467,16 @@ export default function App() {
                 <div className="flex items-center gap-2 mb-1">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[11px] font-bold text-emerald-400">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    Supabase Live Sync
+                    Live Sync Active
                   </span>
                   <span className="text-xs text-slate-400 font-mono">Premier League 3.0</span>
                 </div>
                 <h3 className="text-xl sm:text-2xl font-black font-display text-white flex items-center gap-2">
                   <Users className="w-5 h-5 text-amber-400" />
-                  Official Player Roster <span className="text-gradient-gold">({registeredPlayers.length})</span>
+                  Official Players <span className="text-gradient-gold">({registeredPlayers.length})</span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Live tournament draft board synced directly with Supabase. Click any player card for their full profile and payment receipt.
+                  Live tournament draft board with all registered players. Click any player card for their full profile and payment receipt.
                 </p>
               </div>
 
@@ -1544,7 +1517,7 @@ export default function App() {
                 <button
                   onClick={handleExportCsv}
                   className="h-10 px-3.5 rounded-xl border border-white/10 bg-white/[0.03] text-xs font-bold text-slate-200 hover:bg-white/[0.06] flex items-center gap-1.5 transition-colors"
-                  title="Export draft roster to CSV spreadsheet"
+                  title="Export players to CSV spreadsheet"
                 >
                   <Download className="w-3.5 h-3.5 text-emerald-400" />
                   Export CSV
@@ -1813,7 +1786,7 @@ export default function App() {
             {isLoadingRoster && registeredPlayers.length === 0 ? (
               <div className="py-16 text-center space-y-3">
                 <div className="w-10 h-10 border-3 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-sm font-semibold text-slate-300">Loading live player roster...</p>
+                <p className="text-sm font-semibold text-slate-300">Loading live players...</p>
               </div>
             ) : filteredRoster.length === 0 ? (
               <div className="py-16 text-center space-y-3 rounded-3xl border border-white/10 bg-[#0E1320]/40 p-8">
@@ -2118,7 +2091,7 @@ export default function App() {
               </div>
 
               {/* Cricket & Player Specifications Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+              <div className="grid grid-cols-3 gap-2.5 text-xs">
                 <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
                   <span className="text-[10px] uppercase font-bold text-slate-400 block">Gender</span>
                   <span className="font-semibold text-white mt-0.5 block capitalize">
@@ -2137,15 +2110,14 @@ export default function App() {
                     {selectedPlayerModal.flat_no || 'Not recorded'}
                   </span>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5 text-xs">
                 <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Base Price</span>
-                  <span className="font-semibold text-emerald-400 mt-0.5 block font-mono">₹{selectedPlayerModal.base_price || 100}</span>
-                </div>
-                <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] sm:col-span-2">
                   <span className="text-[10px] uppercase font-bold text-slate-400 block">Batting Style</span>
                   <span className="font-semibold text-white mt-0.5 block">{selectedPlayerModal.batting_style || 'Right-hand'}</span>
                 </div>
-                <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] sm:col-span-2">
+                <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
                   <span className="text-[10px] uppercase font-bold text-slate-400 block">Bowling Style</span>
                   <span className="font-semibold text-white mt-0.5 block">{selectedPlayerModal.bowling_style || 'None'}</span>
                 </div>
@@ -2349,7 +2321,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="border-t border-white/[0.06] bg-[#0E1320] py-6 text-center text-xs text-slate-500">
-        <p>Premier League 3.0 • Official Player Registration & Live Roster Portal • Connected to Supabase</p>
+        <p>Premier League 3.0 • Official Player Registration & Live Players Portal</p>
       </footer>
     </div>
   );
