@@ -685,25 +685,25 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#080B12] text-slate-100 flex flex-col font-sans">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-50 bg-[#0E1320]/90 backdrop-blur-xl border-b border-white/[0.08] shadow-lg">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-xl shadow-lg shadow-amber-500/20 border border-amber-300/40">
+      <header className="sticky top-0 z-50 bg-[#0E1320]/95 backdrop-blur-xl border-b border-white/[0.08] shadow-lg">
+        <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-base sm:text-xl shadow-md shadow-amber-500/20 border border-amber-300/40 shrink-0">
               🏏
             </div>
-            <div>
-              <span className="text-base sm:text-lg font-black font-display tracking-tight text-white flex items-center gap-1.5">
+            <div className="min-w-0 truncate">
+              <span className="text-xs sm:text-lg font-black font-display tracking-tight text-white flex items-center gap-1 sm:gap-1.5 truncate">
                 PREMIER LEAGUE <span className="text-gradient-gold">3.0</span>
               </span>
             </div>
           </div>
 
           {/* Navigation Pill Switcher */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <button
               onClick={() => setActiveTab('register')}
               className={cn(
-                'flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all',
+                'flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all',
                 activeTab === 'register'
                   ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
                   : 'text-slate-300 hover:text-white hover:bg-white/[0.05]'
@@ -716,7 +716,7 @@ export default function App() {
             <button
               onClick={() => setActiveTab('roster')}
               className={cn(
-                'flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all',
+                'flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all',
                 activeTab === 'roster'
                   ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20'
                   : 'text-slate-300 hover:text-white hover:bg-white/[0.05]'
@@ -730,11 +730,11 @@ export default function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
+      <main className="flex-1 container mx-auto px-3 sm:px-4 py-3 sm:py-8 max-w-7xl">
         {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-amber-500/30 bg-gradient-to-br from-[#121624] via-[#0E1320] to-[#080B12] p-4 sm:p-7 md:p-8 shadow-xl sm:shadow-2xl shadow-amber-500/10 mb-4 sm:mb-8">
-          <div className="relative z-10 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3.5 sm:gap-6">
-            <div className="space-y-2 sm:space-y-3 max-w-2xl">
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-amber-500/30 bg-gradient-to-br from-[#121624] via-[#0E1320] to-[#080B12] p-3.5 sm:p-7 md:p-8 shadow-xl sm:shadow-2xl shadow-amber-500/10 mb-3.5 sm:mb-8">
+          <div className="relative z-10 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 sm:gap-6">
+            <div className="space-y-1.5 sm:space-y-3 max-w-2xl">
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-300">
                   <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400" />
@@ -746,29 +746,24 @@ export default function App() {
                 </span>
               </div>
 
-              <h1 className="text-2xl sm:text-4xl md:text-5xl font-black font-display tracking-tight text-white leading-tight">
+              <h1 className="text-xl sm:text-4xl md:text-5xl font-black font-display tracking-tight text-white leading-tight">
                 Player <span className="text-gradient-gold">Registration</span> & Payment Portal
               </h1>
 
               <p className="text-[11px] sm:text-sm text-slate-300 leading-snug sm:leading-relaxed">
-                <span className="sm:hidden">
-                  Official tournament player registration with UPI scan & pay. Live synced with registered players.
-                </span>
-                <span className="hidden sm:inline">
-                  Official tournament player registration with UPI scan & pay option. All registered players are saved and immediately visible in the live tournament player list.
-                </span>
+                Official tournament player registration with UPI scan & pay. All registered players are saved and immediately visible in the live tournament player list.
               </p>
             </div>
 
-            {/* Quick Summary Pill Card - compact horizontal row on mobile, clean column on desktop */}
-            <div className="grid grid-cols-2 md:flex md:flex-col gap-2 p-2.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white/[0.03] border border-white/10 shrink-0 text-center md:text-left text-[11px] sm:text-xs">
+            {/* Quick Summary Strip */}
+            <div className="grid grid-cols-2 md:flex md:flex-col gap-2 p-2 sm:p-4 rounded-xl sm:rounded-2xl bg-white/[0.03] border border-white/10 shrink-0 text-center md:text-left text-[11px] sm:text-xs">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between md:gap-4">
                 <span className="text-[10px] sm:text-xs text-slate-400">Entry Fee</span>
-                <span className="font-bold text-emerald-400 text-xs sm:text-xs">₹500</span>
+                <span className="font-bold text-emerald-400 text-xs sm:text-sm">₹500</span>
               </div>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between md:gap-4 border-l border-white/10 md:border-l-0 pl-2 md:pl-0">
                 <span className="text-[10px] sm:text-xs text-slate-400">Payment</span>
-                <span className="font-bold text-slate-200 text-xs sm:text-xs">UPI QR</span>
+                <span className="font-bold text-slate-200 text-xs sm:text-sm">UPI QR</span>
               </div>
             </div>
           </div>
@@ -863,11 +858,11 @@ export default function App() {
         {/* REGISTRATION FORM + LIVE CARD PREVIEW (activeTab === 'register') */}
         {/* ------------------------------------------------------------- */}
         {activeTab === 'register' && !registeredSuccess && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-start mb-8 sm:mb-12">
             {/* Form Column */}
-            <div className="lg:col-span-7 space-y-6">
+            <div className="lg:col-span-7 space-y-4 sm:space-y-6">
               {errors.form && (
-                <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-4 flex gap-3">
+                <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-3.5 sm:p-4 flex gap-3">
                   <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
                   <div>
                     <h4 className="text-sm font-bold text-red-300">Registration Error</h4>
@@ -875,11 +870,11 @@ export default function App() {
                   </div>
                 </div>
               )}
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                 {/* 1. Player Information */}
-                <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-6 space-y-4">
-                  <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
-                    <User className="w-5 h-5" />
+                <div className="rounded-2xl sm:rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-4 sm:p-6 space-y-3.5 sm:space-y-4">
+                  <div className="flex items-center gap-2 text-amber-400 font-bold text-sm sm:text-base">
+                    <User className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>1. Player Information</span>
                   </div>
 
@@ -888,7 +883,7 @@ export default function App() {
                     <label className="text-xs font-bold text-slate-200">
                       Gender <span className="text-red-400">*</span>
                     </label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                       {[
                         { id: 'male', label: 'Male', icon: '👨' },
                         { id: 'female', label: 'Female', icon: '👩' },
@@ -898,22 +893,22 @@ export default function App() {
                           type="button"
                           onClick={() => setGender(item.id as 'male' | 'female')}
                           className={cn(
-                            'p-3.5 rounded-2xl border font-bold text-sm transition-all flex items-center justify-center gap-2',
+                            'p-3 sm:p-3.5 rounded-xl sm:rounded-2xl border font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 sm:gap-2 active:scale-[0.98]',
                             gender === item.id
                               ? 'border-amber-400 bg-amber-500/15 text-white ring-2 ring-amber-400/40 shadow-md shadow-amber-500/10'
                               : 'border-white/10 bg-white/[0.02] text-slate-400 hover:border-white/20 hover:text-white'
                           )}
                         >
-                          <span className="text-xl">{item.icon}</span>
+                          <span className="text-lg sm:text-xl">{item.icon}</span>
                           <span>{item.label}</span>
-                          {gender === item.id && <CheckCircle2 className="w-4 h-4 text-amber-400 ml-1" />}
+                          {gender === item.id && <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 ml-0.5" />}
                         </button>
                       ))}
                     </div>
                     {errors.gender && <p className="text-xs text-red-400">{errors.gender}</p>}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-200">
                         Full Name <span className="text-red-400">*</span>
@@ -922,7 +917,7 @@ export default function App() {
                         placeholder="e.g. Virat Sharma"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400', errors.fullName && 'border-red-500')}
+                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400', errors.fullName && 'border-red-500')}
                       />
                       {errors.fullName && <p className="text-xs text-red-400">{errors.fullName}</p>}
                     </div>
@@ -932,16 +927,18 @@ export default function App() {
                         Mobile / WhatsApp Number <span className="text-red-400">*</span>
                       </label>
                       <input
+                        type="tel"
                         placeholder="10-digit mobile number"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400', errors.phone && 'border-red-500')}
+                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400', errors.phone && 'border-red-500')}
                       />
                       {errors.phone && <p className="text-xs text-red-400">{errors.phone}</p>}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Age & Flat No in 2 columns on all devices */}
+                  <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-200">
                         Age <span className="text-red-400">*</span>
@@ -953,7 +950,7 @@ export default function App() {
                         placeholder="e.g. 24"
                         value={age}
                         onChange={(e) => setAge(e.target.value)}
-                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400', errors.age && 'border-red-500')}
+                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400', errors.age && 'border-red-500')}
                       />
                       {errors.age && <p className="text-xs text-red-400">{errors.age}</p>}
                     </div>
@@ -967,7 +964,7 @@ export default function App() {
                         placeholder="e.g. A-101"
                         value={flatNo}
                         onChange={(e) => setFlatNo(e.target.value)}
-                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400', errors.flatNo && 'border-red-500')}
+                        className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400', errors.flatNo && 'border-red-500')}
                       />
                       {errors.flatNo && <p className="text-xs text-red-400">{errors.flatNo}</p>}
                     </div>
@@ -980,22 +977,22 @@ export default function App() {
                       placeholder="name@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400', errors.email && 'border-red-500')}
+                      className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400', errors.email && 'border-red-500')}
                     />
                     {errors.email && <p className="text-xs text-red-400">{errors.email}</p>}
                   </div>
                 </div>
 
                 {/* 2. Playing Role & Style */}
-                <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-6 space-y-4">
-                  <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
-                    <Flame className="w-5 h-5" />
+                <div className="rounded-2xl sm:rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-4 sm:p-6 space-y-3.5 sm:space-y-4">
+                  <div className="flex items-center gap-2 text-amber-400 font-bold text-sm sm:text-base">
+                    <Flame className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>2. Playing Role & Style</span>
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-200">Primary Playing Role</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
                       {[
                         { id: 'batter', label: 'Batter', icon: '🏏' },
                         { id: 'bowler', label: 'Bowler', icon: '⚡' },
@@ -1006,26 +1003,26 @@ export default function App() {
                           key={item.id}
                           onClick={() => setRole(item.id as PlayerRole)}
                           className={cn(
-                            'p-3 rounded-2xl border cursor-pointer transition-all text-center space-y-1',
+                            'p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border cursor-pointer transition-all text-center space-y-1 active:scale-[0.98]',
                             role === item.id
                               ? 'border-amber-500 bg-amber-500/15 shadow-sm ring-2 ring-amber-500/30'
                               : 'border-white/10 bg-white/[0.02] hover:border-white/20'
                           )}
                         >
-                          <span className="text-2xl">{item.icon}</span>
-                          <h5 className="text-xs font-bold text-white">{item.label}</h5>
+                          <span className="text-xl sm:text-2xl">{item.icon}</span>
+                          <h5 className="text-[11px] sm:text-xs font-bold text-white truncate">{item.label}</h5>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-1">
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-200">Batting Style</label>
                       <select
                         value={battingStyle}
                         onChange={(e) => setBattingStyle(e.target.value)}
-                        className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                        className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
                       >
                         <option value="Right-hand bat" className="bg-[#0E1320]">Right-hand bat</option>
                         <option value="Left-hand bat" className="bg-[#0E1320]">Left-hand bat</option>
@@ -1037,7 +1034,7 @@ export default function App() {
                       <select
                         value={bowlingStyle}
                         onChange={(e) => setBowlingStyle(e.target.value)}
-                        className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                        className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
                       >
                         <option value="Right-arm medium" className="bg-[#0E1320]">Right-arm fast / medium</option>
                         <option value="Right-arm fast" className="bg-[#0E1320]">Right-arm express fast</option>
@@ -1052,9 +1049,9 @@ export default function App() {
                 </div>
 
                 {/* 3. Experience & Previous Team */}
-                <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-6 space-y-4">
-                  <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
-                    <Award className="w-5 h-5" />
+                <div className="rounded-2xl sm:rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-4 sm:p-6 space-y-3.5 sm:space-y-4">
+                  <div className="flex items-center gap-2 text-amber-400 font-bold text-sm sm:text-base">
+                    <Award className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>3. Experience & Previous Team</span>
                   </div>
 
@@ -1070,7 +1067,7 @@ export default function App() {
                           setCustomPreviousTeam('');
                         }
                       }}
-                      className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                      className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
                     >
                       <option value="season_1" className="bg-[#0E1320]">Season 1 Player</option>
                       <option value="season_2" className="bg-[#0E1320]">Season 2 Player</option>
@@ -1085,7 +1082,7 @@ export default function App() {
                       <select
                         value={previousTeam}
                         onChange={(e) => setPreviousTeam(e.target.value)}
-                        className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                        className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
                       >
                         <option value="" className="bg-[#0E1320]">Select a team...</option>
                         {PREVIOUS_TEAMS.map((team) => (
@@ -1100,7 +1097,7 @@ export default function App() {
                           placeholder="Enter your custom team name"
                           value={customPreviousTeam}
                           onChange={(e) => setCustomPreviousTeam(e.target.value)}
-                          className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                          className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
                         />
                       )}
                     </div>
@@ -1113,15 +1110,15 @@ export default function App() {
                       value={pastAchievements}
                       onChange={(e) => setPastAchievements(e.target.value)}
                       rows={2}
-                      className="w-full rounded-xl bg-black/40 border border-white/10 p-3 text-sm text-white focus:outline-none focus:border-amber-400 resize-none"
+                      className="w-full rounded-xl bg-black/40 border border-white/10 p-3 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400 resize-none"
                     />
                   </div>
                 </div>
 
                 {/* 4. Photo & Bio */}
-                <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-4 sm:p-6 space-y-4">
-                  <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
-                    <Sparkles className="w-5 h-5" />
+                <div className="rounded-2xl sm:rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-4 sm:p-6 space-y-3.5 sm:space-y-4">
+                  <div className="flex items-center gap-2 text-amber-400 font-bold text-sm sm:text-base">
+                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>4. Profile Photo & Bio</span>
                   </div>
 
@@ -1152,7 +1149,7 @@ export default function App() {
                         placeholder="https://example.com/photo.jpg (or paste URL)"
                         value={photoUrl}
                         onChange={(e) => setPhotoUrl(e.target.value)}
-                        className="w-full flex-1 min-w-0 rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+                        className="w-full flex-1 min-w-0 rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
                       />
                     </div>
 
@@ -1180,49 +1177,49 @@ export default function App() {
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                       rows={2}
-                      className="w-full rounded-xl bg-black/40 border border-white/10 p-3 text-sm text-white focus:outline-none focus:border-amber-400 resize-none"
+                      className="w-full rounded-xl bg-black/40 border border-white/10 p-3 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400 resize-none"
                     />
                   </div>
                 </div>
 
                 {/* 5. PAYMENT & SCANNER SECTION */}
-                <div className="rounded-3xl border-2 border-amber-500/40 bg-gradient-to-b from-[#151926] to-[#0A0D15] p-6 space-y-5 shadow-xl shadow-amber-500/10">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
-                      <CreditCard className="w-5 h-5" />
-                      <span>5. Registration Fee & Payment Scanner</span>
+                <div className="rounded-2xl sm:rounded-3xl border-2 border-amber-500/40 bg-gradient-to-b from-[#151926] to-[#0A0D15] p-4 sm:p-6 space-y-4 sm:space-y-5 shadow-xl shadow-amber-500/10">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-amber-400 font-bold text-sm sm:text-base">
+                      <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                      <span>5. Registration & Payment</span>
                     </div>
-                    <span className="text-xs font-black px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                      ₹{REGISTRATION_ENTRY_FEE} ENTRY FEE
+                    <span className="text-xs font-black px-2.5 sm:px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0">
+                      ₹{REGISTRATION_ENTRY_FEE} FEE
                     </span>
                   </div>
 
                   {/* Fee Banner */}
-                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                  <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-amber-500/10 border border-amber-500/25 flex flex-row items-center justify-between gap-3 text-xs">
                     <div>
-                      <h4 className="font-bold text-amber-300">Tournament Player Registration Kit</h4>
-                      <p className="text-slate-400 mt-0.5">
+                      <h4 className="font-bold text-amber-300 text-xs sm:text-sm">Official Player Registration Kit</h4>
+                      <p className="text-slate-400 mt-0.5 text-[11px] sm:text-xs">
                         Includes official tournament match kit, match balls, and Mega Auction draft entry.
                       </p>
                     </div>
-                    <span className="text-xl font-black text-amber-400 shrink-0">₹{REGISTRATION_ENTRY_FEE}</span>
+                    <span className="text-lg sm:text-xl font-black text-amber-400 shrink-0">₹{REGISTRATION_ENTRY_FEE}</span>
                   </div>
 
                   {/* QR Scanner Display Container */}
-                  <div className="p-5 rounded-3xl bg-black/60 border border-amber-500/30 text-center space-y-4">
+                  <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-black/60 border border-amber-500/30 text-center space-y-3.5 sm:space-y-4">
                     <div className="flex items-center justify-between px-1">
                       <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                        <QrCode className="w-4 h-4 text-amber-400" />
+                        <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
                         OFFICIAL PAYMENT QR SCANNER
                       </span>
-                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
                         UPI Scan & Pay
                       </span>
                     </div>
 
                     {/* QR Scanner Frame with Laser Scanline */}
-                    <div className="relative mx-auto w-56 h-56 sm:w-64 sm:h-64 rounded-3xl p-3 bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 shadow-2xl shadow-amber-500/25 border border-amber-300/40 flex items-center justify-center">
-                      <div className="relative w-full h-full rounded-2xl overflow-hidden bg-white p-2 flex items-center justify-center">
+                    <div className="relative mx-auto w-48 h-48 sm:w-60 sm:h-60 rounded-2xl sm:rounded-3xl p-2.5 sm:p-3 bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 shadow-2xl shadow-amber-500/25 border border-amber-300/40 flex items-center justify-center">
+                      <div className="relative w-full h-full rounded-xl sm:rounded-2xl overflow-hidden bg-white p-2 flex items-center justify-center">
                         {/* Laser Scan line */}
                         <div className="animate-scanline inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent shadow-lg shadow-amber-500 pointer-events-none z-10" />
 
@@ -1236,72 +1233,71 @@ export default function App() {
                     </div>
 
                     {/* Scanner note */}
-                    <div className="max-w-md mx-auto p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/90 text-left space-y-1">
-                      <div className="flex items-center gap-1.5 font-bold text-amber-300">
+                    <div className="max-w-md mx-auto p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/90 text-left space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs">
                         <Smartphone className="w-3.5 h-3.5" />
                         Scanner Information
                       </div>
                       <p className="text-[11px] text-slate-400 leading-relaxed">
-                        Official scanner is active above. When you provide your official QR scanner image later, it will immediately display in this slot. You can also transfer directly to the official UPI ID below.
+                        Official scanner is active above. Scan using any UPI app or transfer directly to the official UPI ID below.
                       </p>
                     </div>
 
                     {/* UPI ID Strip */}
-                    <div className="max-w-md mx-auto flex items-center justify-between p-3 rounded-2xl bg-white/[0.04] border border-white/10">
-                      <div className="text-left">
+                    <div className="max-w-md mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-white/[0.04] border border-white/10 text-left">
+                      <div className="min-w-0 flex-1">
                         <span className="text-[10px] uppercase font-bold text-slate-400 block">Tournament UPI ID</span>
-                        <span className="text-sm font-black text-white font-mono">{OFFICIAL_UPI_ID}</span>
+                        <span className="text-xs sm:text-sm font-black text-white font-mono break-all">{OFFICIAL_UPI_ID}</span>
                       </div>
                       <button
                         type="button"
                         onClick={handleCopyUpi}
-                        className="h-9 px-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 text-xs font-bold flex items-center gap-1.5"
+                        className="h-10 sm:h-9 px-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 active:scale-95 text-xs font-bold flex items-center justify-center gap-1.5 shrink-0"
                       >
                         {copiedUpi ? (
                           <>
                             <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            Copied!
+                            <span>Copied!</span>
                           </>
                         ) : (
                           <>
                             <Copy className="w-3.5 h-3.5" />
-                            Copy UPI ID
+                            <span>Copy UPI ID</span>
                           </>
                         )}
                       </button>
                     </div>
 
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[10px] sm:text-[11px] text-slate-400">
                       Google Pay • PhonePe • Paytm • BHIM • Cred • Any Bank App
                     </p>
                   </div>
 
-
                   {/* Transaction ID & Screenshot for UPI */}
-                  <div className="space-y-4 pt-1">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-3.5 sm:space-y-4 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-200">
-                          UPI / UTR Transaction Reference <span className="text-red-400">*</span>
+                          UPI / UTR Reference Number <span className="text-red-400">*</span>
                         </label>
                         <input
                           placeholder="e.g. 431289456723 (12-digit UTR)"
                           required
                           value={transactionId}
                           onChange={(e) => setTransactionId(e.target.value)}
-                          className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400', errors.transactionId && 'border-red-500')}
+                          className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400', errors.transactionId && 'border-red-500')}
                         />
                         {errors.transactionId && <p className="text-xs text-red-400">{errors.transactionId}</p>}
-                        {!errors.transactionId && <p className="text-[11px] text-slate-400">Available in your GPay / PhonePe payment screen</p>}
+                        {!errors.transactionId && <p className="text-[11px] text-slate-400">Available in your GPay / PhonePe payment receipt</p>}
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-200">Account Holder Name</label>
+                        <label className="text-xs font-bold text-slate-200">Account Holder Name (Optional)</label>
                         <input
                           placeholder="Name on bank / UPI account"
                           value={payerName}
                           onChange={(e) => setPayerName(e.target.value)}
-                          className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-sm text-white focus:outline-none focus:border-amber-400"
+                          className="w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400"
                         />
                       </div>
                     </div>
@@ -1317,11 +1313,11 @@ export default function App() {
                         </span>
                       </div>
                       {paymentReceiptUrl ? (
-                        <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
-                          <div className="flex items-center gap-3">
-                            <img src={paymentReceiptUrl} alt="Receipt thumbnail" className="w-12 h-12 rounded-xl object-cover border border-white/20" />
-                            <div>
-                              <p className="text-xs font-bold text-white truncate max-w-[200px]">{paymentReceiptName || 'receipt.png'}</p>
+                        <div className="flex items-center justify-between p-3 rounded-xl sm:rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
+                          <div className="flex items-center gap-3 min-w-0 pr-2">
+                            <img src={paymentReceiptUrl} alt="Receipt thumbnail" className="w-11 h-11 rounded-lg object-cover border border-white/20 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-white truncate max-w-[180px] sm:max-w-[220px]">{paymentReceiptName || 'receipt.png'}</p>
                               <span className="text-[10px] text-emerald-400 font-semibold">Screenshot Attached ✓</span>
                             </div>
                           </div>
@@ -1331,14 +1327,14 @@ export default function App() {
                               setPaymentReceiptUrl('');
                               setPaymentReceiptName('');
                             }}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-400"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 shrink-0"
                           >
                             <X className="w-4 h-4" />
                           </button>
                         </div>
                       ) : (
                         <label className={cn(
-                          "flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed bg-white/[0.02] hover:bg-white/[0.04] transition-colors cursor-pointer text-center space-y-1",
+                          "flex flex-col items-center justify-center p-4 rounded-xl sm:rounded-2xl border-2 border-dashed bg-white/[0.02] hover:bg-white/[0.04] active:scale-[0.99] transition-all cursor-pointer text-center space-y-1",
                           errors.paymentReceipt ? "border-red-500 bg-red-500/5 hover:border-red-400" : "border-white/15 hover:border-amber-500/40"
                         )}>
                           <Upload className={cn("w-5 h-5", errors.paymentReceipt ? "text-red-400" : "text-amber-400")} />
@@ -1361,18 +1357,19 @@ export default function App() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full h-14 text-base font-black rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-black shadow-xl shadow-amber-500/25 hover:from-amber-600 hover:to-yellow-600 transition-all flex items-center justify-center gap-2"
+                  className="w-full min-h-[52px] sm:h-14 px-4 py-3 text-sm sm:text-base font-black rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-black shadow-xl shadow-amber-500/25 hover:from-amber-600 hover:to-yellow-600 active:scale-[0.99] transition-all flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <>
                       <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                      Saving Registration...
+                      <span>Saving Registration...</span>
                     </>
                   ) : (
                     <>
-                      <UserPlus className="w-5 h-5" />
-                      Complete Registration & Enter Tournament Draft
-                      <ArrowRight className="w-5 h-5 ml-1" />
+                      <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                      <span className="sm:hidden">Complete Registration (₹{REGISTRATION_ENTRY_FEE})</span>
+                      <span className="hidden sm:inline">Complete Registration & Enter Tournament Draft (₹{REGISTRATION_ENTRY_FEE})</span>
+                      <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1 shrink-0" />
                     </>
                   )}
                 </button>
@@ -1392,26 +1389,26 @@ export default function App() {
               </div>
 
               {/* Trading Card */}
-              <div className="relative overflow-hidden rounded-3xl border-2 border-amber-400/50 bg-gradient-to-b from-[#121624] via-[#0E1320] to-black p-6 shadow-2xl shadow-amber-500/20 text-center space-y-5">
+              <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-amber-400/50 bg-gradient-to-b from-[#121624] via-[#0E1320] to-black p-4 sm:p-6 shadow-2xl shadow-amber-500/20 text-center space-y-4 sm:space-y-5">
                 {/* Flat Number Badge top-right */}
                 <div className="absolute top-3 right-3 font-mono text-xs font-black text-amber-300 bg-black/60 px-2.5 py-0.5 rounded-full border border-amber-500/30">
                   {flatNo ? `Flat ${flatNo}` : 'Flat A-101'}
                 </div>
 
                 {/* Avatar */}
-                <div className="relative mx-auto w-32 h-32 rounded-3xl p-1 bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-600 shadow-xl shadow-amber-500/25 mt-2">
-                  <div className="w-full h-full rounded-[22px] overflow-hidden bg-neutral-900 flex items-center justify-center">
+                <div className="relative mx-auto w-24 h-24 sm:w-32 sm:h-32 rounded-2xl sm:rounded-3xl p-1 bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-600 shadow-xl shadow-amber-500/25 mt-2">
+                  <div className="w-full h-full rounded-[18px] sm:rounded-[22px] overflow-hidden bg-neutral-900 flex items-center justify-center">
                     {photoUrl ? (
                       <img src={photoUrl} alt={fullName || 'Player'} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-5xl">{getRoleBadge(role).icon}</span>
+                      <span className="text-4xl sm:text-5xl">{getRoleBadge(role).icon}</span>
                     )}
                   </div>
                 </div>
 
                 {/* Name & Role */}
                 <div className="space-y-1">
-                  <h3 className="text-2xl font-black font-display text-white tracking-tight truncate">
+                  <h3 className="text-xl sm:text-2xl font-black font-display text-white tracking-tight truncate">
                     {fullName || 'Player Name'}
                   </h3>
                   <div className="flex flex-wrap items-center justify-center gap-1.5">
@@ -1436,13 +1433,13 @@ export default function App() {
 
                 {/* Skills Grid */}
                 <div className="grid grid-cols-2 gap-2 text-left pt-2 border-t border-white/10 text-xs">
-                  <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                  <div className="p-2 sm:p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                     <span className="text-[10px] uppercase font-bold text-slate-400 block">Batting</span>
-                    <span className="font-semibold text-white truncate block">{battingStyle}</span>
+                    <span className="font-semibold text-white truncate block text-[11px] sm:text-xs">{battingStyle}</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                  <div className="p-2 sm:p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                     <span className="text-[10px] uppercase font-bold text-slate-400 block">Bowling</span>
-                    <span className="font-semibold text-white truncate block">{bowlingStyle}</span>
+                    <span className="font-semibold text-white truncate block text-[11px] sm:text-xs">{bowlingStyle}</span>
                   </div>
                 </div>
 
@@ -1450,7 +1447,7 @@ export default function App() {
                 <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-left flex items-center justify-between text-xs">
                   <div>
                     <span className="text-[10px] uppercase font-bold text-emerald-400 block">Entry Fee</span>
-                    <span className="font-bold text-white">₹{REGISTRATION_ENTRY_FEE} • UPI Payment</span>
+                    <span className="font-bold text-white text-xs sm:text-sm">₹{REGISTRATION_ENTRY_FEE} • UPI Payment</span>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
                     {transactionId && paymentReceiptUrl ? 'UTR & Screenshot ✓' : transactionId ? 'UTR Entered' : 'Payment Ready'}
@@ -1464,18 +1461,18 @@ export default function App() {
               </div>
 
               {/* View players CTA */}
-              <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.08] flex items-center justify-between text-xs">
+              <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-white/[0.02] border border-white/[0.08] flex items-center justify-between gap-3 text-xs">
                 <div>
                   <h5 className="font-bold text-white">View Existing Players</h5>
-                  <p className="text-slate-400">{registeredPlayers.length} players registered</p>
+                  <p className="text-slate-400 text-[11px]">{registeredPlayers.length} players registered</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActiveTab('roster')}
-                  className="px-3.5 py-2 rounded-xl border border-white/15 bg-white/[0.04] text-white hover:bg-white/[0.08] font-bold flex items-center gap-1.5"
+                  className="px-3.5 py-2 rounded-xl border border-white/15 bg-white/[0.04] text-white hover:bg-white/[0.08] font-bold flex items-center gap-1.5 shrink-0"
                 >
                   <Users className="w-3.5 h-3.5 text-emerald-400" />
-                  View Players
+                  <span>View Players</span>
                 </button>
               </div>
             </div>
@@ -1488,7 +1485,7 @@ export default function App() {
         {(activeTab === 'roster' || registeredSuccess) && (
           <div className="space-y-6 pt-2 animate-in fade-in duration-300">
             {/* Header Strip */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-3xl bg-[#0E1320]/80 border border-white/[0.08] backdrop-blur-xl">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5 p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-[#0E1320]/80 border border-white/[0.08] backdrop-blur-xl">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[11px] font-bold text-emerald-400">
@@ -1497,7 +1494,7 @@ export default function App() {
                   </span>
                   <span className="text-xs text-slate-400 font-mono">Premier League 3.0</span>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-black font-display text-white flex items-center gap-2">
+                <h3 className="text-lg sm:text-2xl font-black font-display text-white flex items-center gap-2">
                   <Users className="w-5 h-5 text-amber-400" />
                   Official Players <span className="text-gradient-gold">({registeredPlayers.length})</span>
                 </h3>
@@ -1506,9 +1503,9 @@ export default function App() {
                 </p>
               </div>
 
-              {/* View mode & Refresh */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center bg-white/[0.04] p-1 rounded-xl border border-white/10">
+              {/* View mode & Action buttons */}
+              <div className="flex items-center justify-between sm:justify-end gap-2 w-full md:w-auto pt-2 md:pt-0 border-t border-white/[0.06] md:border-t-0">
+                <div className="flex items-center bg-white/[0.04] p-1 rounded-xl border border-white/10 shrink-0">
                   <button
                     onClick={() => setRosterViewMode('grid')}
                     className={cn(
@@ -1531,48 +1528,50 @@ export default function App() {
                   </button>
                 </div>
 
-                <button
-                  onClick={() => fetchRegisteredPlayers()}
-                  className="h-10 px-3.5 rounded-xl border border-white/10 bg-white/[0.03] text-xs font-bold text-slate-200 hover:bg-white/[0.06] flex items-center gap-1.5 transition-colors"
-                  title="Force refresh database records"
-                >
-                  <RefreshCw className={cn('w-3.5 h-3.5 text-amber-400', isLoadingRoster && 'animate-spin')} />
-                  Refresh
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => fetchRegisteredPlayers()}
+                    className="h-9 sm:h-10 px-3 rounded-xl border border-white/10 bg-white/[0.03] text-xs font-bold text-slate-200 hover:bg-white/[0.06] flex items-center gap-1.5 transition-colors"
+                    title="Force refresh database records"
+                  >
+                    <RefreshCw className={cn('w-3.5 h-3.5 text-amber-400', isLoadingRoster && 'animate-spin')} />
+                    <span>Refresh</span>
+                  </button>
 
-                <button
-                  onClick={handleExportCsv}
-                  className="h-10 px-3.5 rounded-xl border border-white/10 bg-white/[0.03] text-xs font-bold text-slate-200 hover:bg-white/[0.06] flex items-center gap-1.5 transition-colors"
-                  title="Export players to CSV spreadsheet"
-                >
-                  <Download className="w-3.5 h-3.5 text-emerald-400" />
-                  Export CSV
-                </button>
+                  <button
+                    onClick={handleExportCsv}
+                    className="h-9 sm:h-10 px-3 rounded-xl border border-white/10 bg-white/[0.03] text-xs font-bold text-slate-200 hover:bg-white/[0.06] flex items-center gap-1.5 transition-colors"
+                    title="Export players to CSV spreadsheet"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>CSV</span>
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* KPI Metrics Dashboard Strip */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
               {/* Card 1: Total Draft Pool */}
               <button
                 type="button"
                 onClick={handleClearFilters}
                 className={cn(
-                  'p-4 rounded-2xl border text-left transition-all group flex flex-col justify-between',
+                  'p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all group flex flex-col justify-between active:scale-[0.98]',
                   !hasActiveFilters
                     ? 'bg-amber-500/10 border-amber-500/40 shadow-lg shadow-amber-500/5'
                     : 'bg-[#0E1320]/80 border-white/[0.08] hover:border-amber-500/30'
                 )}
               >
                 <div className="flex items-center justify-between w-full">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Pool</span>
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                    <Users className="w-4 h-4" />
+                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Pool</span>
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                    <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                 </div>
                 <div className="mt-2">
-                  <div className="text-2xl sm:text-3xl font-black font-display text-white">{rosterStats.total}</div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">Players in draft</div>
+                  <div className="text-xl sm:text-3xl font-black font-display text-white">{rosterStats.total}</div>
+                  <div className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">Players in draft</div>
                 </div>
               </button>
 
@@ -1581,23 +1580,23 @@ export default function App() {
                 type="button"
                 onClick={() => setRosterStatusFilter((prev) => (prev === 'paid' ? 'all' : 'paid'))}
                 className={cn(
-                  'p-4 rounded-2xl border text-left transition-all group flex flex-col justify-between',
+                  'p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all group flex flex-col justify-between active:scale-[0.98]',
                   rosterStatusFilter === 'paid'
                     ? 'bg-emerald-500/15 border-emerald-500/50 shadow-lg shadow-emerald-500/10 ring-1 ring-emerald-500/30'
                     : 'bg-[#0E1320]/80 border-white/[0.08] hover:border-emerald-500/40'
                 )}
               >
                 <div className="flex items-center justify-between w-full">
-                  <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Verified
                   </span>
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                    <ShieldCheck className="w-4 h-4" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                 </div>
                 <div className="mt-2">
-                  <div className="text-2xl sm:text-3xl font-black font-display text-emerald-300">{rosterStats.paid}</div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">
+                  <div className="text-xl sm:text-3xl font-black font-display text-emerald-300">{rosterStats.paid}</div>
+                  <div className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">
                     {rosterStats.total ? Math.round((rosterStats.paid / rosterStats.total) * 100) : 0}% fees confirmed
                   </div>
                 </div>
@@ -1608,40 +1607,40 @@ export default function App() {
                 type="button"
                 onClick={() => setRosterStatusFilter((prev) => (prev === 'pending' ? 'all' : 'pending'))}
                 className={cn(
-                  'p-4 rounded-2xl border text-left transition-all group flex flex-col justify-between',
+                  'p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all group flex flex-col justify-between active:scale-[0.98]',
                   rosterStatusFilter === 'pending'
                     ? 'bg-amber-500/15 border-amber-500/50 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500/30'
                     : 'bg-[#0E1320]/80 border-white/[0.08] hover:border-amber-500/40'
                 )}
               >
                 <div className="flex items-center justify-between w-full">
-                  <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
                     <Clock className="w-3 h-3 text-amber-400" /> Pending
                   </span>
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                    <Clock className="w-4 h-4" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                 </div>
                 <div className="mt-2">
-                  <div className="text-2xl sm:text-3xl font-black font-display text-amber-300">{rosterStats.pending}</div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">Awaiting bank check</div>
+                  <div className="text-xl sm:text-3xl font-black font-display text-amber-300">{rosterStats.pending}</div>
+                  <div className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">Awaiting check</div>
                 </div>
               </button>
 
               {/* Card 4: Divisions & Role Breakdown */}
-              <div className="p-4 rounded-2xl border border-white/[0.08] bg-[#0E1320]/80 flex flex-col justify-between">
+              <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-white/[0.08] bg-[#0E1320]/80 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Breakdown</span>
-                  <div className="w-8 h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
-                    <Trophy className="w-4 h-4" />
+                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Breakdown</span>
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                    <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                 </div>
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400 font-medium">Male / Female</span>
+                    <span className="text-slate-400 font-medium text-[11px] sm:text-xs">M / F</span>
                     <span className="text-white font-bold">{rosterStats.maleCount} / {rosterStats.femaleCount}</span>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+                  <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] text-slate-400 pt-0.5">
                     <span>👑 {rosterStats.allRounders}</span>
                     <span>🏏 {rosterStats.batters}</span>
                     <span>⚡ {rosterStats.bowlers}</span>
@@ -1652,16 +1651,16 @@ export default function App() {
             </div>
 
             {/* Filter Bar & Controls */}
-            <div className="p-4 rounded-3xl bg-[#0E1320]/70 border border-white/[0.08] space-y-3.5">
+            <div className="p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl bg-[#0E1320]/70 border border-white/[0.08] space-y-3">
               {/* Row 1: Search & Sort dropdown */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
                 <div className="relative flex-1">
                   <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400 pointer-events-none" />
                   <input
-                    placeholder="Search by name, flat no (e.g. A-101), age, team, phone, or UTR..."
+                    placeholder="Search name, flat (A-101), age, team, phone..."
                     value={rosterSearch}
                     onChange={(e) => setRosterSearch(e.target.value)}
-                    className="w-full rounded-2xl bg-black/40 border border-white/10 pl-10 pr-9 h-11 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-colors"
+                    className="w-full rounded-xl sm:rounded-2xl bg-black/40 border border-white/10 pl-10 pr-9 h-11 text-base sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-colors"
                   />
                   {rosterSearch && (
                     <button
@@ -1675,13 +1674,13 @@ export default function App() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="relative">
+                  <div className="relative flex-1 sm:flex-initial">
                     <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5 pointer-events-none" />
                     <select
                       value={rosterSortBy}
                       onChange={(e) => setRosterSortBy(e.target.value as any)}
                       aria-label="Sort players by"
-                      className="h-11 rounded-2xl bg-black/40 border border-white/10 pl-8 pr-7 text-xs font-bold text-white focus:outline-none focus:border-amber-400 cursor-pointer appearance-none"
+                      className="w-full sm:w-auto h-11 rounded-xl sm:rounded-2xl bg-black/40 border border-white/10 pl-8 pr-7 text-xs font-bold text-white focus:outline-none focus:border-amber-400 cursor-pointer appearance-none"
                     >
                       <option value="newest" className="bg-[#0E1320] text-white">Sort: Newest First</option>
                       <option value="oldest" className="bg-[#0E1320] text-white">Sort: Oldest First</option>
@@ -1693,88 +1692,82 @@ export default function App() {
                   {hasActiveFilters && (
                     <button
                       onClick={handleClearFilters}
-                      className="h-11 px-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 text-xs font-bold text-rose-300 hover:bg-rose-500/20 flex items-center gap-1.5 transition-colors shrink-0"
+                      className="h-11 px-3 rounded-xl sm:rounded-2xl border border-rose-500/30 bg-rose-500/10 text-xs font-bold text-rose-300 hover:bg-rose-500/20 active:scale-95 flex items-center gap-1.5 transition-colors shrink-0"
                     >
                       <X className="w-3.5 h-3.5" />
-                      Clear Filters
+                      <span>Clear</span>
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Row 2: Filter Pills (Status, Gender, Role) */}
-              <div className="flex flex-col gap-2.5 pt-1 border-t border-white/[0.05]">
-                {/* Gender & Status filter row */}
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  {/* Status Pills */}
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Status:</span>
+              {/* Row 2: Filter Pills - horizontal scrollable strip on mobile with no scrollbar */}
+              <div className="pt-2 border-t border-white/[0.05] space-y-2">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 sm:mx-0 sm:px-0 sm:flex-wrap scrollbar-none text-xs">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">Status:</span>
+                  <button
+                    onClick={() => setRosterStatusFilter('all')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95',
+                      rosterStatusFilter === 'all'
+                        ? 'bg-white text-black shadow-sm'
+                        : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
+                    )}
+                  >
+                    All ({rosterStats.total})
+                  </button>
+                  <button
+                    onClick={() => setRosterStatusFilter('paid')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shrink-0 active:scale-95',
+                      rosterStatusFilter === 'paid'
+                        ? 'bg-emerald-500 text-black shadow-sm'
+                        : 'bg-white/[0.04] text-emerald-400 hover:bg-emerald-500/10'
+                    )}
+                  >
+                    <CheckCircle2 className="w-3 h-3" />
+                    Verified ({rosterStats.paid})
+                  </button>
+                  <button
+                    onClick={() => setRosterStatusFilter('pending')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shrink-0 active:scale-95',
+                      rosterStatusFilter === 'pending'
+                        ? 'bg-amber-500 text-black shadow-sm'
+                        : 'bg-white/[0.04] text-amber-400 hover:bg-amber-500/10'
+                    )}
+                  >
+                    <Clock className="w-3 h-3" />
+                    Pending ({rosterStats.pending})
+                  </button>
+
+                  <span className="text-slate-600 px-1 shrink-0">|</span>
+
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">Gender:</span>
+                  {[
+                    { id: 'all', label: `All` },
+                    { id: 'male', label: `👨 Male (${rosterStats.maleCount})` },
+                    { id: 'female', label: `👩 Female (${rosterStats.femaleCount})` },
+                  ].map((chip) => (
                     <button
-                      onClick={() => setRosterStatusFilter('all')}
+                      key={chip.id}
+                      onClick={() => setRosterGenderFilter(chip.id as any)}
                       className={cn(
-                        'px-2.5 py-1 rounded-xl text-xs font-bold transition-all',
-                        rosterStatusFilter === 'all'
-                          ? 'bg-white text-black'
+                        'px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95',
+                        rosterGenderFilter === chip.id
+                          ? 'bg-amber-500 text-black shadow-sm'
                           : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
                       )}
                     >
-                      All ({rosterStats.total})
+                      {chip.label}
                     </button>
-                    <button
-                      onClick={() => setRosterStatusFilter('paid')}
-                      className={cn(
-                        'px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1',
-                        rosterStatusFilter === 'paid'
-                          ? 'bg-emerald-500 text-black shadow-sm'
-                          : 'bg-white/[0.04] text-emerald-400 hover:bg-emerald-500/10'
-                      )}
-                    >
-                      <CheckCircle2 className="w-3 h-3" />
-                      Verified ({rosterStats.paid})
-                    </button>
-                    <button
-                      onClick={() => setRosterStatusFilter('pending')}
-                      className={cn(
-                        'px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1',
-                        rosterStatusFilter === 'pending'
-                          ? 'bg-amber-500 text-black shadow-sm'
-                          : 'bg-white/[0.04] text-amber-400 hover:bg-amber-500/10'
-                      )}
-                    >
-                      <Clock className="w-3 h-3" />
-                      Pending ({rosterStats.pending})
-                    </button>
-                  </div>
+                  ))}
 
-                  {/* Gender Pills */}
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Gender:</span>
-                    {[
-                      { id: 'all', label: `All (${rosterStats.total})` },
-                      { id: 'male', label: `👨 Male (${rosterStats.maleCount})` },
-                      { id: 'female', label: `👩 Female (${rosterStats.femaleCount})` },
-                    ].map((chip) => (
-                      <button
-                        key={chip.id}
-                        onClick={() => setRosterGenderFilter(chip.id as any)}
-                        className={cn(
-                          'px-2.5 py-1 rounded-xl text-xs font-bold transition-all',
-                          rosterGenderFilter === chip.id
-                            ? 'bg-amber-500 text-black shadow-sm'
-                            : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
-                        )}
-                      >
-                        {chip.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                  <span className="text-slate-600 px-1 shrink-0">|</span>
 
-                {/* Role Pills */}
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Role:</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">Role:</span>
                   {[
-                    { id: 'all', label: `All Roles (${rosterStats.total})` },
+                    { id: 'all', label: `All Roles` },
                     { id: 'all_rounder', label: `👑 All-Rounders (${rosterStats.allRounders})` },
                     { id: 'batter', label: `🏏 Batters (${rosterStats.batters})` },
                     { id: 'bowler', label: `⚡ Bowlers (${rosterStats.bowlers})` },
@@ -1784,7 +1777,7 @@ export default function App() {
                       key={chip.id}
                       onClick={() => setRosterRoleFilter(chip.id)}
                       className={cn(
-                        'px-2.5 py-1 rounded-xl text-xs font-bold transition-all',
+                        'px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95',
                         rosterRoleFilter === chip.id
                           ? 'bg-amber-500 text-black shadow-sm'
                           : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
@@ -1843,7 +1836,7 @@ export default function App() {
                       key={player.id}
                       onClick={() => setSelectedPlayerModal(player)}
                       className={cn(
-                        'group relative overflow-hidden rounded-3xl border p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-3.5',
+                        'group relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-3 sm:space-y-3.5 active:scale-[0.99]',
                         isNewlyRegistered
                           ? 'border-amber-400 bg-gradient-to-b from-amber-500/15 via-[#161C2E] to-[#0E1320] shadow-xl shadow-amber-500/20 ring-2 ring-amber-400/40'
                           : 'border-white/[0.08] bg-[#0E1320]/80 hover:border-amber-400/50 hover:bg-[#121829] hover:shadow-xl hover:shadow-black/50 hover:-translate-y-0.5'
@@ -1868,7 +1861,7 @@ export default function App() {
                       </div>
 
                       {/* Player Avatar & Details Header */}
-                      <div className="flex items-start gap-3.5 pr-14">
+                      <div className="flex items-start gap-3 sm:gap-3.5 pr-20 sm:pr-24">
                         <div className="w-13 h-13 rounded-2xl overflow-hidden bg-neutral-900 border border-white/15 flex items-center justify-center shrink-0 shadow-md group-hover:border-amber-400/60 transition-colors">
                           {player.photo_url ? (
                             <img src={player.photo_url} alt={player.name} className="w-full h-full object-cover" />
@@ -1960,7 +1953,7 @@ export default function App() {
               /* Enhanced Table View */
               <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 overflow-hidden shadow-xl">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full text-left text-xs min-w-[760px]">
                     <thead className="bg-white/[0.04] border-b border-white/[0.08] text-slate-400 uppercase text-[10px] font-black tracking-wider">
                       <tr>
                         <th className="py-3.5 px-4">Player</th>
@@ -2054,17 +2047,17 @@ export default function App() {
         {/* ------------------------------------------------------------- */}
         {selectedPlayerModal && (
           <div
-            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
             onClick={() => setSelectedPlayerModal(null)}
           >
             <div
-              className="bg-[#0E1320] border border-white/15 rounded-3xl max-w-2xl w-full p-6 sm:p-7 space-y-5 shadow-2xl relative animate-in zoom-in-95 duration-200 text-left my-8"
+              className="bg-[#0E1320] border border-white/15 rounded-2xl sm:rounded-3xl max-w-2xl w-full p-4 sm:p-7 space-y-4 sm:space-y-5 shadow-2xl relative animate-in zoom-in-95 duration-200 text-left my-4 sm:my-8 max-h-[92vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-start justify-between gap-4 pb-4 border-b border-white/[0.08]">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-neutral-900 border-2 border-amber-400/60 flex items-center justify-center shrink-0 shadow-lg">
+              <div className="flex items-start justify-between gap-3 sm:gap-4 pb-3.5 sm:pb-4 border-b border-white/[0.08]">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0 pr-2">
+                  <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl overflow-hidden bg-neutral-900 border-2 border-amber-400/60 flex items-center justify-center shrink-0 shadow-lg">
                     {selectedPlayerModal.photo_url ? (
                       <img
                         src={selectedPlayerModal.photo_url}
@@ -2072,21 +2065,21 @@ export default function App() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <span className="text-3xl">{getRoleBadge(selectedPlayerModal.role).icon}</span>
+                      <span className="text-2xl sm:text-3xl">{getRoleBadge(selectedPlayerModal.role).icon}</span>
                     )}
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xl sm:text-2xl font-black font-display text-white">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                      <h3 className="text-lg sm:text-2xl font-black font-display text-white truncate max-w-[190px] sm:max-w-none">
                         {selectedPlayerModal.name}
                       </h3>
                       {selectedPlayerModal.flat_no && (
-                        <span className="bg-amber-400/20 text-amber-400 border border-amber-400/40 font-mono font-bold text-xs px-2.5 py-0.5 rounded-full">
+                        <span className="bg-amber-400/20 text-amber-400 border border-amber-400/40 font-mono font-bold text-[10px] sm:text-xs px-2 sm:px-2.5 py-0.5 rounded-full shrink-0">
                           Flat {selectedPlayerModal.flat_no}
                         </span>
                       )}
                       {selectedPlayerModal.jersey_number && !selectedPlayerModal.flat_no && (
-                        <span className="bg-amber-400/20 text-amber-400 border border-amber-400/40 font-mono font-black text-xs px-2 py-0.5 rounded-full">
+                        <span className="bg-amber-400/20 text-amber-400 border border-amber-400/40 font-mono font-black text-[10px] sm:text-xs px-2 py-0.5 rounded-full shrink-0">
                           #{selectedPlayerModal.jersey_number}
                         </span>
                       )}
@@ -2109,7 +2102,7 @@ export default function App() {
 
                 <button
                   onClick={() => setSelectedPlayerModal(null)}
-                  className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.1] transition-colors shrink-0"
+                  className="w-9 h-9 sm:w-8 sm:h-8 rounded-xl bg-white/[0.05] border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.1] active:scale-95 transition-colors shrink-0"
                   title="Close (Esc)"
                 >
                   <X className="w-4 h-4" />
