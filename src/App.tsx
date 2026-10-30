@@ -566,18 +566,6 @@ export default function App() {
             el.focus?.();
           }
         }, 100);
-      } else if (errorMsg.includes('players_mobile_number_key') || errorMsg.includes('mobile_number')) {
-        setErrors({
-          phone: 'This phone number is already registered',
-          form: 'This mobile number is already registered in Premier League 3.0. Please enter a different mobile number or contact tournament admin.',
-        });
-        setTimeout(() => {
-          const el = document.getElementById('input-phone');
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            el.focus?.();
-          }
-        }, 100);
       } else {
         setErrors({
           form: errorMsg.includes('duplicate')
@@ -1086,7 +1074,11 @@ export default function App() {
                         onChange={(e) => setPhone(e.target.value)}
                         className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400 scroll-mt-24', errors.phone && 'border-red-500')}
                       />
-                      {errors.phone && <p className="text-xs text-red-400">{errors.phone}</p>}
+                      {errors.phone ? (
+                        <p className="text-xs text-red-400">{errors.phone}</p>
+                      ) : (
+                        <p className="text-[11px] text-slate-400">Multiple players can be registered with the same mobile number</p>
+                      )}
                     </div>
                   </div>
 

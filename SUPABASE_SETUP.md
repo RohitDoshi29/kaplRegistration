@@ -24,7 +24,7 @@ Go to **Supabase Dashboard → SQL Editor → New Query** and paste this:
 create table players (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  mobile_number text not null unique,
+  mobile_number text not null, -- Non-unique: allows family/friends to register multiple players
   email text,
   role text not null check (role in ('batter', 'bowler', 'all_rounder', 'wicket_keeper')),
   batting_style text,
@@ -52,6 +52,7 @@ create table players (
 -- Migration for existing tables (run this if you already have the table created):
 ALTER TABLE players ADD COLUMN IF NOT EXISTS age integer;
 ALTER TABLE players ADD COLUMN IF NOT EXISTS flat_no text;
+ALTER TABLE players DROP CONSTRAINT IF EXISTS players_mobile_number_key; -- Allow multiple registrations per phone number
 
 -- Enable Row Level Security
 alter table players enable row level security;
