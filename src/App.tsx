@@ -399,10 +399,6 @@ export default function App() {
       errs.transactionId = 'Please enter UPI / UTR Reference number';
       if (!firstInvalidFieldId) firstInvalidFieldId = 'input-transactionId';
     }
-    if (!paymentReceiptUrl) {
-      errs.paymentReceipt = 'Payment screenshot is compulsory';
-      if (!firstInvalidFieldId) firstInvalidFieldId = 'input-paymentReceipt';
-    }
 
     if (Object.keys(errs).length > 0) {
       const errorList = Object.values(errs)
@@ -1265,15 +1261,27 @@ export default function App() {
 
                 {/* 4. Photo & Bio */}
                 <div className="rounded-2xl sm:rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 backdrop-blur-xl p-4 sm:p-6 space-y-3.5 sm:space-y-4">
-                  <div className="flex items-center gap-2 text-amber-400 font-bold text-sm sm:text-base">
-                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-                    <span>4. Profile Photo & Bio</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-amber-400 font-bold text-sm sm:text-base">
+                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span>4. Profile Photo & Bio</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-white/[0.05] px-2.5 py-0.5 rounded-full border border-white/10">
+                      Optional
+                    </span>
                   </div>
 
                   <div className="space-y-3">
-                    <label className="text-xs font-bold text-slate-200 block">
-                      Profile Photo (Upload from device or paste image link)
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-200 block">
+                        Profile Photo <span className="text-slate-400 font-normal">(Optional)</span>
+                      </label>
+                      <span className="text-[11px] text-slate-400">Not compulsory to register</span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400">
+                      You can upload a photo now or skip it. If skipped, an official cricket avatar will be assigned to your player card automatically.
+                    </p>
 
                     {/* Direct Upload Button */}
                     <label className="w-full h-12 sm:h-13 px-4 rounded-xl sm:rounded-2xl border border-amber-500/40 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 active:scale-[0.99] font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 cursor-pointer transition-all shadow-sm">
@@ -1484,10 +1492,10 @@ export default function App() {
                     <div id="input-paymentReceipt" className="space-y-2 scroll-mt-24">
                       <div className="flex items-center justify-between">
                         <label className="text-xs font-bold text-slate-200">
-                          Payment Screenshot / Receipt <span className="text-red-400">*</span>
+                          Payment Screenshot / Receipt <span className="text-slate-400 font-normal">(Optional)</span>
                         </label>
-                        <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                          Compulsory
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-white/[0.05] px-2 py-0.5 rounded-md border border-white/10">
+                          Optional
                         </span>
                       </div>
                       {paymentReceiptUrl ? (
@@ -1511,13 +1519,10 @@ export default function App() {
                           </button>
                         </div>
                       ) : (
-                        <label className={cn(
-                          "flex flex-col items-center justify-center p-4 rounded-xl sm:rounded-2xl border-2 border-dashed bg-white/[0.02] hover:bg-white/[0.04] active:scale-[0.99] transition-all cursor-pointer text-center space-y-1",
-                          errors.paymentReceipt ? "border-red-500 bg-red-500/5 hover:border-red-400" : "border-white/15 hover:border-amber-500/40"
-                        )}>
-                          <Upload className={cn("w-5 h-5", errors.paymentReceipt ? "text-red-400" : "text-amber-400")} />
+                        <label className="flex flex-col items-center justify-center p-4 rounded-xl sm:rounded-2xl border-2 border-dashed border-white/15 hover:border-amber-500/40 bg-white/[0.02] hover:bg-white/[0.04] active:scale-[0.99] transition-all cursor-pointer text-center space-y-1">
+                          <Upload className="w-5 h-5 text-amber-400" />
                           <span className="text-xs font-bold text-white">Upload Payment Screenshot</span>
-                          <span className="text-[10px] text-slate-400">Compulsory: PNG, JPG or WebP</span>
+                          <span className="text-[10px] text-slate-400">Optional: PNG, JPG or WebP</span>
                           <input type="file" accept="image/*" onChange={handleReceiptUpload} className="hidden" />
                         </label>
                       )}
