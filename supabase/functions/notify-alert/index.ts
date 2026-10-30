@@ -5,6 +5,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// In-memory cache to prevent duplicate emails for the same player within 15 seconds
+const recentAlerts = new Map<string, number>();
+
 Deno.serve(async (req) => {
   // Handle CORS preflight request
   if (req.method === "OPTIONS") {
@@ -30,6 +33,28 @@ Deno.serve(async (req) => {
     // Support both direct invocation and Supabase Database Webhook payload
     const record = body.record || body.new || body;
     const eventType = body.type || (body.record ? "Database Insert" : "Player Registration");
+
+    // Prevent duplicate emails for the same player within 15 seconds
+    const dedupeKey = `${record.id || ''}_${record.name || ''}_${record.transaction_id || ''}`;
+    const now = Date.now();
+    if (dedupeKey.trim().length > 2) {
+      const lastSent = recentAlerts.get(dedupeKey);
+      if (lastSent && now - lastSent < 15000) {
+        console.log(`Deduplicated duplicate alert for ${dedupeKey}`);
+        return new Response(JSON.stringify({ duplicate: true, message: "Duplicate alert skipped" }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      recentAlerts.set(dedupeKey, now);
+
+      // Clean up old entries
+      if (recentAlerts.size > 200) {
+        for (const [key, timestamp] of recentAlerts.entries()) {
+          if (now - timestamp > 60000) recentAlerts.delete(key);
+        }
+      }
+    }
 
     const playerName = record.name || record.full_name || record.email || "Registered Player";
     const phone = record.mobile_number || record.phone || "Not provided";

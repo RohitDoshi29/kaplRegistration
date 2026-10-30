@@ -523,18 +523,6 @@ export default function App() {
       setNewlyRegisteredPlayer(newPlayer);
       setRegisteredSuccess(true);
 
-      // Trigger Email Notification via Supabase Edge Function (non-blocking)
-      try {
-        supabase.functions
-          .invoke('notify-alert', {
-            body: {
-              type: 'registration',
-              record: newPlayer,
-            },
-          })
-          .catch((err) => console.log('Notification function status:', err));
-      } catch {}
-
       // Trigger Confetti
       try {
         confetti({
