@@ -49,6 +49,7 @@ const OFFICIAL_PAYEE_NAME = 'Premier League 3.0';
 const REGISTRATION_ENTRY_FEE = 500;
 const OFFICIAL_SCANNER_IMG = '/images/scanner.png';
 const PLACEHOLDER_SCANNER_SVG = '/images/scanner-placeholder.svg';
+const OFFICIAL_UPI_URL = `upi://pay?pa=${OFFICIAL_UPI_ID}&pn=${encodeURIComponent(OFFICIAL_PAYEE_NAME)}&am=${REGISTRATION_ENTRY_FEE}&cu=INR&tn=${encodeURIComponent('KAPL Player Registration')}`;
 
 const PREVIOUS_TEAMS = [
   "Kapil's Warriors",
@@ -117,6 +118,7 @@ export default function App() {
   const [paymentReceiptName, setPaymentReceiptName] = useState('');
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [scannerImgError, setScannerImgError] = useState(false);
+  const [upiNotice, setUpiNotice] = useState<string | null>(null);
 
   // Status & Success state
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -304,6 +306,22 @@ export default function App() {
       navigator.clipboard.writeText(OFFICIAL_UPI_ID);
       setCopiedUpi(true);
       setTimeout(() => setCopiedUpi(false), 2500);
+    }
+  };
+
+  // Open UPI App click handler (supports mobile app intent & desktop fallback)
+  const handleUpiAppClick = () => {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (!isMobile) {
+      if (navigator?.clipboard) {
+        navigator.clipboard.writeText(OFFICIAL_UPI_ID);
+        setCopiedUpi(true);
+        setUpiNotice('Tournament UPI ID copied to clipboard! (On mobile phones, this button directly opens your UPI app)');
+        setTimeout(() => {
+          setCopiedUpi(false);
+          setUpiNotice(null);
+        }, 4000);
+      }
     }
   };
 
@@ -1397,6 +1415,36 @@ export default function App() {
                           onError={() => setScannerImgError(true)}
                         />
                       </div>
+                    </div>
+
+                    {/* Pay Directly via UPI App (Mobile-friendly One-Click) */}
+                    <div className="max-w-md mx-auto space-y-2 pt-1">
+                      <div className="relative flex items-center justify-center my-1">
+                        <div className="border-t border-white/10 w-full" />
+                        <span className="bg-black/90 px-3 text-[10px] font-bold text-amber-400 uppercase tracking-wider shrink-0 flex items-center gap-1.5">
+                          <Smartphone className="w-3 h-3 text-amber-400" />
+                          One-Click Mobile Payment
+                        </span>
+                        <div className="border-t border-white/10 w-full" />
+                      </div>
+
+                      <a
+                        href={OFFICIAL_UPI_URL}
+                        onClick={handleUpiAppClick}
+                        className="w-full py-3.5 px-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/30 active:scale-[0.98] transition-all cursor-pointer group"
+                      >
+                        <Smartphone className="w-4 h-4 text-slate-950 shrink-0 group-hover:scale-110 transition-transform" />
+                        <span>Click to Open UPI App & Pay ₹{REGISTRATION_ENTRY_FEE}</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-950/80 shrink-0 ml-0.5" />
+                      </a>
+                      <p className="text-[10px] sm:text-[11px] text-slate-400">
+                        Tap to open Google Pay, PhonePe, Paytm, BHIM or any installed UPI app
+                      </p>
+                      {upiNotice && (
+                        <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs text-amber-300 font-medium">
+                          {upiNotice}
+                        </div>
+                      )}
                     </div>
 
                     {/* Scanner note */}
