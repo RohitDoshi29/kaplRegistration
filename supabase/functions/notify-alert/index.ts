@@ -59,8 +59,25 @@ Deno.serve(async (req) => {
     const playerName = record.name || record.full_name || record.email || "Registered Player";
     const phone = record.mobile_number || record.phone || "Not provided";
     const role = (record.role || "all_rounder").replace("_", " ").toUpperCase();
-    const flatNo = record.flat_no || "N/A";
-    const age = record.age || "N/A";
+
+    // Extract flat_no and age from direct columns or fallback bio string
+    const rawBio = record.bio || '';
+    const bioFlat = rawBio.match(/\[Flat:\s*([^\]|]+)/i)?.[1]?.trim();
+    const bioAge = rawBio.match(/Age:\s*([^\]|]+)/i)?.[1]?.trim();
+
+    const rawFlat = (record.flat_no !== undefined && record.flat_no !== null && String(record.flat_no).trim() !== '')
+      ? String(record.flat_no).trim()
+      : (bioFlat || '');
+
+    const flatDisplay = rawFlat
+      ? (rawFlat.toLowerCase().startsWith('flat') ? rawFlat : `Flat ${rawFlat}`)
+      : 'Not provided';
+
+    const rawAge = (record.age !== undefined && record.age !== null && String(record.age).trim() !== '')
+      ? String(record.age).trim()
+      : (bioAge || '');
+
+    const ageDisplay = rawAge ? `${rawAge} yrs` : 'Not provided';
     const gender = record.gender ? record.gender.toUpperCase() : "N/A";
     const utr = record.transaction_id || "N/A";
     const fee = record.payment_amount || 500;
@@ -92,7 +109,7 @@ Deno.serve(async (req) => {
           </tr>
           <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
             <td style="padding: 10px 0; color: #94a3b8;">Flat No & Age:</td>
-            <td style="padding: 10px 0; color: #ffffff; text-align: right;">Flat ${flatNo} • Age: ${age}</td>
+            <td style="padding: 10px 0; font-weight: bold; color: #ffffff; text-align: right;">${flatDisplay} • Age: ${rawAge || 'Not provided'}</td>
           </tr>
           <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
             <td style="padding: 10px 0; color: #94a3b8;">Role / Gender:</td>
@@ -130,7 +147,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: "Premier League 3.0 <onboarding@resend.dev>",
         to: [ALERT_TO_EMAIL],
-        subject: `🏏 New Player Registered: ${playerName} (Flat ${flatNo})`,
+        subject: `🏏 New Player: ${playerName} (${flatDisplay}${rawAge ? `, Age: ${rawAge}` : ''})`,
         html: emailHtml,
       }),
     });

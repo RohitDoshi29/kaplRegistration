@@ -399,8 +399,8 @@ export default function App() {
       if (!firstInvalidFieldId) firstInvalidFieldId = 'input-age';
     } else {
       const numAge = Number(age);
-      if (isNaN(numAge) || numAge < 5 || numAge > 99) {
-        errs.age = 'Please enter a valid age (5 - 99)';
+      if (isNaN(numAge) || numAge < 9 || numAge > 99) {
+        errs.age = 'Age must be 9 or above (9 - 99)';
         if (!firstInvalidFieldId) firstInvalidFieldId = 'input-age';
       }
     }
@@ -1092,7 +1092,7 @@ export default function App() {
                       <input
                         id="input-age"
                         type="number"
-                        min="5"
+                        min="9"
                         max="99"
                         placeholder="e.g. 24"
                         value={age}
