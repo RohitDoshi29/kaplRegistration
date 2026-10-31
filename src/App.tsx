@@ -399,6 +399,10 @@ export default function App() {
       errs.transactionId = 'Please enter UPI / UTR Reference number';
       if (!firstInvalidFieldId) firstInvalidFieldId = 'input-transactionId';
     }
+    if (!paymentReceiptUrl) {
+      errs.paymentReceipt = 'Payment screenshot is compulsory';
+      if (!firstInvalidFieldId) firstInvalidFieldId = 'input-paymentReceipt';
+    }
 
     if (Object.keys(errs).length > 0) {
       const errorList = Object.values(errs)
@@ -801,10 +805,6 @@ export default function App() {
               <h1 className="text-xl sm:text-4xl md:text-5xl font-black font-display tracking-tight text-white leading-tight">
                 Player <span className="text-gradient-gold">Registration</span> & Payment Portal
               </h1>
-
-              <p className="text-[11px] sm:text-sm text-slate-300 leading-snug sm:leading-relaxed">
-                Official tournament player registration with UPI scan & pay. All registered players are saved and immediately visible in the live tournament player list.
-              </p>
             </div>
 
             {/* Quick Summary Strip */}
@@ -1062,11 +1062,7 @@ export default function App() {
                         onChange={(e) => setPhone(e.target.value)}
                         className={cn('w-full rounded-xl bg-black/40 border border-white/10 px-3.5 h-11 text-base sm:text-sm text-white focus:outline-none focus:border-amber-400 scroll-mt-24', errors.phone && 'border-red-500')}
                       />
-                      {errors.phone ? (
-                        <p className="text-xs text-red-400">{errors.phone}</p>
-                      ) : (
-                        <p className="text-[11px] text-slate-400">Multiple players can be registered with the same mobile number</p>
-                      )}
+                      {errors.phone && <p className="text-xs text-red-400">{errors.phone}</p>}
                     </div>
                   </div>
 
@@ -1271,10 +1267,6 @@ export default function App() {
                       <span className="text-[11px] text-slate-400">Not compulsory to register</span>
                     </div>
 
-                    <p className="text-[11px] text-slate-400">
-                      You can upload a photo now or skip it. If skipped, an official cricket avatar will be assigned to your player card automatically.
-                    </p>
-
                     {/* Direct Upload Button */}
                     <label className="w-full h-12 sm:h-13 px-4 rounded-xl sm:rounded-2xl border border-amber-500/40 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 active:scale-[0.99] font-bold text-xs sm:text-sm flex items-center justify-center gap-2.5 cursor-pointer transition-all shadow-sm">
                       <Upload className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
@@ -1376,9 +1368,6 @@ export default function App() {
                   <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-amber-500/10 border border-amber-500/25 flex flex-row items-center justify-between gap-3 text-xs">
                     <div>
                       <h4 className="font-bold text-amber-300 text-xs sm:text-sm">Official Player Registration Kit</h4>
-                      <p className="text-slate-400 mt-0.5 text-[11px] sm:text-xs">
-                        Includes official tournament match kit, match balls, and Mega Auction draft entry.
-                      </p>
                     </div>
                     <span className="text-lg sm:text-xl font-black text-amber-400 shrink-0">₹{REGISTRATION_ENTRY_FEE}</span>
                   </div>
@@ -1484,10 +1473,10 @@ export default function App() {
                     <div id="input-paymentReceipt" className="space-y-2 scroll-mt-24">
                       <div className="flex items-center justify-between">
                         <label className="text-xs font-bold text-slate-200">
-                          Payment Screenshot / Receipt <span className="text-slate-400 font-normal">(Optional)</span>
+                          Payment Screenshot / Receipt <span className="text-red-400">*</span>
                         </label>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-white/[0.05] px-2 py-0.5 rounded-md border border-white/10">
-                          Optional
+                        <span className="text-[10px] text-amber-300 font-bold uppercase tracking-wider bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                          Compulsory
                         </span>
                       </div>
                       {paymentReceiptUrl ? (
@@ -1511,10 +1500,13 @@ export default function App() {
                           </button>
                         </div>
                       ) : (
-                        <label className="flex flex-col items-center justify-center p-4 rounded-xl sm:rounded-2xl border-2 border-dashed border-white/15 hover:border-amber-500/40 bg-white/[0.02] hover:bg-white/[0.04] active:scale-[0.99] transition-all cursor-pointer text-center space-y-1">
-                          <Upload className="w-5 h-5 text-amber-400" />
+                        <label className={cn(
+                          "flex flex-col items-center justify-center p-4 rounded-xl sm:rounded-2xl border-2 border-dashed bg-white/[0.02] hover:bg-white/[0.04] active:scale-[0.99] transition-all cursor-pointer text-center space-y-1",
+                          errors.paymentReceipt ? "border-red-500 bg-red-500/5 hover:border-red-400" : "border-white/15 hover:border-amber-500/40"
+                        )}>
+                          <Upload className={cn("w-5 h-5", errors.paymentReceipt ? "text-red-400" : "text-amber-400")} />
                           <span className="text-xs font-bold text-white">Upload Payment Screenshot</span>
-                          <span className="text-[10px] text-slate-400">Optional: PNG, JPG or WebP</span>
+                          <span className="text-[10px] text-slate-400">Compulsory: PNG, JPG or WebP</span>
                           <input type="file" accept="image/*" onChange={handleReceiptUpload} className="hidden" />
                         </label>
                       )}
@@ -1642,11 +1634,6 @@ export default function App() {
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
                     {transactionId && paymentReceiptUrl ? 'UTR & Screenshot ✓' : transactionId ? 'UTR Entered' : 'Payment Ready'}
                   </span>
-                </div>
-
-                <div className="pt-1 text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Real-time sync & live tournament pool</span>
                 </div>
               </div>
 
