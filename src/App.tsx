@@ -19,7 +19,6 @@ import {
   Check,
   AlertCircle,
   HelpCircle,
-  QrCode,
   CreditCard,
   Smartphone,
   Copy,
@@ -1382,26 +1381,8 @@ export default function App() {
                     </span>
                   </div>
 
-                  {/* Fee Banner */}
-                  <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-amber-500/10 border border-amber-500/25 flex flex-row items-center justify-between gap-3 text-xs">
-                    <div>
-                      <h4 className="font-bold text-amber-300 text-xs sm:text-sm">Official Player Registration Kit</h4>
-                    </div>
-                    <span className="text-lg sm:text-xl font-black text-amber-400 shrink-0">₹{REGISTRATION_ENTRY_FEE}</span>
-                  </div>
-
                   {/* QR Scanner Display Container */}
                   <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-black/60 border border-amber-500/30 text-center space-y-3.5 sm:space-y-4">
-                    <div className="flex items-center justify-between px-1">
-                      <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                        <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
-                        OFFICIAL PAYMENT QR SCANNER
-                      </span>
-                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                        UPI Scan & Pay
-                      </span>
-                    </div>
-
                     {/* QR Scanner Frame with Laser Scanline */}
                     <div className="relative mx-auto w-48 h-48 sm:w-60 sm:h-60 rounded-2xl sm:rounded-3xl p-2.5 sm:p-3 bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 shadow-2xl shadow-amber-500/25 border border-amber-300/40 flex items-center justify-center">
                       <div className="relative w-full h-full rounded-xl sm:rounded-2xl overflow-hidden bg-white p-2 flex items-center justify-center">
@@ -1445,17 +1426,6 @@ export default function App() {
                           {upiNotice}
                         </div>
                       )}
-                    </div>
-
-                    {/* Scanner note */}
-                    <div className="max-w-md mx-auto p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/90 text-left space-y-1">
-                      <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs">
-                        <Smartphone className="w-3.5 h-3.5" />
-                        Scanner Information
-                      </div>
-                      <p className="text-[11px] text-slate-400 leading-relaxed">
-                        Official scanner is active above. Scan using any UPI app or transfer directly to the official UPI ID below.
-                      </p>
                     </div>
 
                     {/* UPI ID Strip */}
