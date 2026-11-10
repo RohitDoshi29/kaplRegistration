@@ -452,7 +452,7 @@ export default function App() {
 
     setIsSubmitting(true);
     const playerId = generateUUID();
-    const computedPaymentStatus: PaymentStatus = 'pending';
+    const computedPaymentStatus: PaymentStatus = 'paid';
     const rawDigits = phone.replace(/\D/g, '');
     const cleanPhone = rawDigits.length === 12 && rawDigits.startsWith('91') ? rawDigits.slice(2) : rawDigits;
     const numAge = age.trim() ? Number(age) : undefined;
@@ -868,7 +868,7 @@ export default function App() {
                   Welcome, <span className="text-gradient-gold">{fullName}</span>!
                 </h2>
                 <p className="text-sm text-slate-300 leading-relaxed">
-                  Your registration has been successfully saved to the database. Your payment is pending verification by the admin.
+                  Your registration has been successfully saved to the database. Your payment has been confirmed and verified.
                 </p>
               </div>
 
@@ -883,8 +883,8 @@ export default function App() {
                   <span className="font-bold text-amber-400">₹{REGISTRATION_ENTRY_FEE}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">⏳ Status</span>
-                  <span className="font-bold text-orange-400">Pending Review</span>
+                  <span className="text-slate-400">✓ Status</span>
+                  <span className="font-bold text-emerald-400">Payment Confirmed</span>
                 </div>
               </div>
 
@@ -910,7 +910,7 @@ export default function App() {
               </div>
 
               <p className="text-[11px] text-slate-500">
-                Your payment details will be verified by the admin team. You will receive confirmation once verified.
+                Your payment has been automatically verified and confirmed. You're all set!
               </p>
             </div>
           </div>
@@ -957,7 +957,7 @@ export default function App() {
                   <div className="pt-0.5">
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                       <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                      Payment: UPI Submitted
+                      Payment: Confirmed ✓
                     </span>
                   </div>
                 </div>
