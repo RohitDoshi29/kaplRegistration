@@ -1487,35 +1487,6 @@ export default function App() {
                     </div>
 
                     {/* Pay Directly via UPI App (Mobile-friendly One-Click) */}
-                    <div className="max-w-md mx-auto space-y-2 pt-1">
-                      <div className="relative flex items-center justify-center my-1">
-                        <div className="border-t border-white/10 w-full" />
-                        <span className="bg-black/90 px-3 text-[10px] font-bold text-amber-400 uppercase tracking-wider shrink-0 flex items-center gap-1.5">
-                          <Smartphone className="w-3 h-3 text-amber-400" />
-                          One-Click Mobile Payment
-                        </span>
-                        <div className="border-t border-white/10 w-full" />
-                      </div>
-
-                      <a
-                        href={OFFICIAL_UPI_URL}
-                        onClick={handleUpiAppClick}
-                        className="w-full py-3.5 px-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/30 active:scale-[0.98] transition-all cursor-pointer group"
-                      >
-                        <Smartphone className="w-4 h-4 text-slate-950 shrink-0 group-hover:scale-110 transition-transform" />
-                        <span>Click to Open UPI App & Pay ₹{REGISTRATION_ENTRY_FEE}</span>
-                        <ExternalLink className="w-3.5 h-3.5 text-slate-950/80 shrink-0 ml-0.5" />
-                      </a>
-                      <p className="text-[10px] sm:text-[11px] text-slate-400">
-                        Tap to open Google Pay, PhonePe, Paytm, BHIM or any installed UPI app
-                      </p>
-                      {upiNotice && (
-                        <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs text-amber-300 font-medium">
-                          {upiNotice}
-                        </div>
-                      )}
-                    </div>
-
                     {/* UPI ID Strip */}
                     <div className="max-w-md mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-white/[0.04] border border-white/10 text-left">
                       <div className="min-w-0 flex-1">
