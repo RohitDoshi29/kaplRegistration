@@ -151,9 +151,6 @@ export default function App() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      console.log('Supabase fetch - Data:', data);
-      console.log('Supabase fetch - Error:', error);
-
       if (error) {
         console.warn('Supabase fetch error:', error.message);
       }
@@ -221,6 +218,11 @@ export default function App() {
             }
           }
         } catch {}
+        // If there's an error but we already have players loaded, don't clear them
+        if (registeredPlayers.length > 0) {
+          setIsLoadingRoster(false);
+          return;
+        }
       }
 
       const sorted = Array.from(map.values()).sort((a, b) => {
@@ -228,8 +230,6 @@ export default function App() {
         const tB = new Date(b.created_at || 0).getTime();
         return tB - tA;
       });
-
-      console.log('Processed players - Count:', sorted.length, 'Players:', sorted);
 
       setRegisteredPlayers(sorted);
       setNewlyRegisteredPlayer((prev) => (prev && map.has(prev.id) ? prev : null));
@@ -267,10 +267,10 @@ export default function App() {
       }
     });
 
-    // 3. Periodic fallback poll every 5 seconds
+    // 3. Periodic fallback poll every 60 seconds (reduced from 5s to avoid timeout)
     const intervalId = setInterval(() => {
       fetchRegisteredPlayers();
-    }, 5000);
+    }, 60000);
 
     return () => {
       supabase.removeChannel(channel);
