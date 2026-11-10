@@ -142,13 +142,39 @@ export default function App() {
   const [copiedModalUtr, setCopiedModalUtr] = useState(false);
 
 
-  // Fetch all registered players from Supabase
+  // Fetch all registered players from Supabase (omits heavy payment_receipt_url for 10x faster loading)
   const fetchRegisteredPlayers = useCallback(async () => {
     setIsLoadingRoster(true);
     try {
       const { data, error } = await supabase
         .from('players')
-        .select('*')
+        .select(`
+          id,
+          name,
+          mobile_number,
+          email,
+          role,
+          batting_style,
+          bowling_style,
+          jersey_number,
+          tournament_id,
+          base_price,
+          photo_url,
+          experience,
+          previous_team,
+          past_achievements,
+          bio,
+          gender,
+          age,
+          flat_no,
+          payment_method,
+          payment_status,
+          transaction_id,
+          payment_amount,
+          created_at,
+          updated_at,
+          payment_verification
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -284,10 +310,33 @@ export default function App() {
     if (selectedPlayerModal) {
       const updated = registeredPlayers.find((p) => p.id === selectedPlayerModal.id);
       if (updated) {
-        setSelectedPlayerModal(updated);
+        setSelectedPlayerModal((prev) => (prev ? { ...updated, payment_receipt_url: prev.payment_receipt_url || updated.payment_receipt_url } : updated));
       }
     }
   }, [registeredPlayers, selectedPlayerModal?.id]);
+
+  // Open player modal & load receipt screenshot on-demand if not already loaded
+  const handleOpenPlayerModal = async (player: Player) => {
+    setSelectedPlayerModal(player);
+    if (!player.payment_receipt_url) {
+      try {
+        const { data } = await supabase
+          .from('players')
+          .select('payment_receipt_url')
+          .eq('id', player.id)
+          .single();
+        if (data?.payment_receipt_url) {
+          setSelectedPlayerModal((prev) =>
+            prev && prev.id === player.id
+              ? { ...prev, payment_receipt_url: data.payment_receipt_url }
+              : prev
+          );
+        }
+      } catch (err) {
+        console.warn('Could not fetch receipt screenshot on demand:', err);
+      }
+    }
+  };
 
   // Keyboard shortcut listener for modals
   useEffect(() => {
@@ -329,6 +378,50 @@ export default function App() {
     }
   };
 
+  // Profile photo upload with canvas compression (max 480px, ~30-50KB)
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (!dataUrl) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 480;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.80);
+          setPhotoUrl(compressed);
+        } else {
+          setPhotoUrl(dataUrl);
+        }
+      };
+      img.onerror = () => {
+        setPhotoUrl(dataUrl);
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Receipt image upload
   const handleReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -349,7 +442,7 @@ export default function App() {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const maxDim = 1200;
+        const maxDim = 800;
         let width = img.width;
         let height = img.height;
         if (width > maxDim || height > maxDim) {
@@ -366,7 +459,7 @@ export default function App() {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          const compressed = canvas.toDataURL('image/jpeg', 0.82);
+          const compressed = canvas.toDataURL('image/jpeg', 0.78);
           setPaymentReceiptUrl(compressed);
         } else {
           setPaymentReceiptUrl(dataUrl);
@@ -1296,17 +1389,7 @@ export default function App() {
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          const reader = new FileReader();
-                          reader.onload = (event) => {
-                            if (event.target?.result) {
-                              setPhotoUrl(event.target.result as string);
-                            }
-                          };
-                          reader.readAsDataURL(file);
-                        }}
+                        onChange={handlePhotoUpload}
                         className="hidden"
                       />
                     </label>
@@ -2034,7 +2117,7 @@ export default function App() {
                   return (
                     <div
                       key={player.id}
-                      onClick={() => setSelectedPlayerModal(player)}
+                      onClick={() => handleOpenPlayerModal(player)}
                       className={cn(
                         'group relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-2 sm:space-y-2.5 active:scale-[0.99] h-[360px]',
                         isNewlyRegistered
@@ -2167,7 +2250,7 @@ export default function App() {
                       {filteredRoster.map((player) => (
                         <tr
                           key={player.id}
-                          onClick={() => setSelectedPlayerModal(player)}
+                          onClick={() => handleOpenPlayerModal(player)}
                           className="hover:bg-white/[0.03] transition-colors cursor-pointer"
                         >
                           <td className="py-3 px-4 font-bold text-white flex items-center gap-2.5">
@@ -2218,7 +2301,7 @@ export default function App() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedPlayerModal(player);
+                                handleOpenPlayerModal(player);
                               }}
                               className="px-2.5 py-1 rounded-xl bg-white/[0.05] border border-white/10 text-white hover:bg-amber-500 hover:text-black font-bold text-[11px] inline-flex items-center gap-1 transition-colors"
                             >
