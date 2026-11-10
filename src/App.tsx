@@ -2031,7 +2031,7 @@ export default function App() {
                       key={player.id}
                       onClick={() => setSelectedPlayerModal(player)}
                       className={cn(
-                        'group relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-3 sm:space-y-3.5 active:scale-[0.99] h-[400px]',
+                        'group relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-2 sm:space-y-2.5 active:scale-[0.99] h-[360px]',
                         isNewlyRegistered
                           ? 'border-amber-400 bg-gradient-to-b from-amber-500/15 via-[#161C2E] to-[#0E1320] shadow-xl shadow-amber-500/20 ring-2 ring-amber-400/40'
                           : 'border-white/[0.08] bg-[#0E1320]/80 hover:border-amber-400/50 hover:bg-[#121829] hover:shadow-xl hover:shadow-black/50 hover:-translate-y-0.5'
@@ -2066,19 +2066,19 @@ export default function App() {
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <h4 className="font-bold text-white text-base truncate group-hover:text-amber-300 transition-colors">
+                          <h4 className="font-bold text-white text-sm truncate group-hover:text-amber-300 transition-colors line-clamp-1">
                             {player.name}
                           </h4>
-                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                            <span className={cn('text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg border', getRoleBadge(player.role).cls)}>
+                          <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                            <span className={cn('text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-lg border', getRoleBadge(player.role).cls)}>
                               {getRoleBadge(player.role).icon} {player.role?.replace('_', ' ')}
                             </span>
-                            <span className="text-[10px] px-2 py-0.5 rounded-lg border border-white/10 text-slate-300">
-                              {player.gender === 'female' ? '👩 Female' : '👨 Male'}
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-lg border border-white/10 text-slate-300">
+                              {player.gender === 'female' ? '👩' : '👨'}
                             </span>
                             {player.age && (
-                              <span className="text-[10px] px-2 py-0.5 rounded-lg border border-amber-500/20 text-amber-300">
-                                Age {player.age}
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-lg border border-amber-500/20 text-amber-300">
+                                {player.age}y
                               </span>
                             )}
                           </div>
@@ -2086,37 +2086,31 @@ export default function App() {
                       </div>
 
                       {/* Batting & Bowling Specs */}
-                      <div className="grid grid-cols-2 gap-1.5 text-left text-xs">
-                        <div className="p-2 rounded-xl bg-white/[0.02] border border-white/[0.05]">
-                          <span className="text-[9px] uppercase font-bold text-slate-400 block">Batting</span>
-                          <span className="font-semibold text-slate-200 truncate block text-[11px]">{player.batting_style || 'Right-hand'}</span>
+                      <div className="grid grid-cols-2 gap-1 text-left text-xs">
+                        <div className="p-1.5 rounded-lg bg-white/[0.02] border border-white/[0.05]">
+                          <span className="text-[8px] uppercase font-bold text-slate-400 block">Bat</span>
+                          <span className="font-semibold text-slate-200 truncate block text-[10px]">{player.batting_style?.split(' ')[0] || 'Right'}</span>
                         </div>
-                        <div className="p-2 rounded-xl bg-white/[0.02] border border-white/[0.05]">
-                          <span className="text-[9px] uppercase font-bold text-slate-400 block">Bowling</span>
-                          <span className="font-semibold text-slate-200 truncate block text-[11px]">{player.bowling_style || 'None'}</span>
+                        <div className="p-1.5 rounded-lg bg-white/[0.02] border border-white/[0.05]">
+                          <span className="text-[8px] uppercase font-bold text-slate-400 block">Bowl</span>
+                          <span className="font-semibold text-slate-200 truncate block text-[10px]">{player.bowling_style?.split(' ')[0] || 'None'}</span>
                         </div>
                       </div>
 
                       {/* Franchise / Experience pill */}
-                      {player.previous_team ? (
-                        <div className="text-[11px] px-2.5 py-1 rounded-xl bg-white/[0.03] border border-white/[0.06] text-slate-300 flex items-center justify-between">
-                          <span className="text-slate-400 text-[10px] uppercase font-bold">Franchise</span>
-                          <span className="font-medium text-amber-300 truncate max-w-[140px]">{player.previous_team}</span>
-                        </div>
-                      ) : (
-                        <div className="text-[11px] px-2.5 py-1 rounded-xl bg-white/[0.02] border border-white/[0.04] text-slate-400 flex items-center justify-between">
-                          <span className="text-[10px] uppercase font-bold">Experience</span>
-                          <span className="font-medium text-slate-300">
-                            {formatExperienceLabel(player.experience)}
-                          </span>
-                        </div>
-                      )}
+                      <div className="text-[10px] px-2 py-0.5 rounded-lg bg-white/[0.02] border border-white/[0.04] text-slate-400 truncate">
+                        {player.previous_team ? (
+                          <span className="text-amber-300 font-medium">🏏 {player.previous_team.slice(0, 20)}</span>
+                        ) : (
+                          <span className="text-slate-300 font-medium">{formatExperienceLabel(player.experience)}</span>
+                        )}
+                      </div>
 
                       {/* Bottom row: Payment status & View Profile link */}
-                      <div className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-xs">
+                      <div className="flex items-center justify-between pt-1 border-t border-white/[0.06] text-xs gap-1">
                         <span
                           className={cn(
-                            'font-bold inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg border',
+                            'font-bold inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-lg border whitespace-nowrap',
                             player.payment_status === 'paid'
                               ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
                               : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
@@ -2124,20 +2118,20 @@ export default function App() {
                         >
                           {player.payment_status === 'paid' ? (
                             <>
-                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                              Verified ✓
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
+                              <span>Verified</span>
                             </>
                           ) : (
                             <>
-                              <Clock className="w-3 h-3 text-amber-400" />
-                              Pending
+                              <Clock className="w-2.5 h-2.5 text-amber-400" />
+                              <span>Pending</span>
                             </>
                           )}
                         </span>
 
-                        <span className="text-slate-400 group-hover:text-amber-400 text-xs font-bold inline-flex items-center gap-1 transition-colors">
-                          <Eye className="w-3.5 h-3.5" />
-                          Profile
+                        <span className="text-slate-400 group-hover:text-amber-400 text-[9px] font-bold inline-flex items-center gap-0.5 transition-colors whitespace-nowrap">
+                          <Eye className="w-2.5 h-2.5" />
+                          <span>View</span>
                         </span>
                       </div>
                     </div>
