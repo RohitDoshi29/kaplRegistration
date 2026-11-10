@@ -2031,7 +2031,7 @@ export default function App() {
                       key={player.id}
                       onClick={() => setSelectedPlayerModal(player)}
                       className={cn(
-                        'group relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-3 sm:space-y-3.5 active:scale-[0.99] h-full min-h-[380px]',
+                        'group relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-3 sm:space-y-3.5 active:scale-[0.99] h-[400px]',
                         isNewlyRegistered
                           ? 'border-amber-400 bg-gradient-to-b from-amber-500/15 via-[#161C2E] to-[#0E1320] shadow-xl shadow-amber-500/20 ring-2 ring-amber-400/40'
                           : 'border-white/[0.08] bg-[#0E1320]/80 hover:border-amber-400/50 hover:bg-[#121829] hover:shadow-xl hover:shadow-black/50 hover:-translate-y-0.5'
