@@ -2022,7 +2022,7 @@ export default function App() {
               </div>
             ) : rosterViewMode === 'grid' ? (
               /* Enhanced Grid View */
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {filteredRoster.map((player) => {
                   const isNewlyRegistered = newlyRegisteredPlayer && player.id === newlyRegisteredPlayer.id;
 
@@ -2031,7 +2031,7 @@ export default function App() {
                       key={player.id}
                       onClick={() => setSelectedPlayerModal(player)}
                       className={cn(
-                        'group relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-3 sm:space-y-3.5 active:scale-[0.99]',
+                        'group relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-3 sm:space-y-3.5 active:scale-[0.99] h-full min-h-[380px]',
                         isNewlyRegistered
                           ? 'border-amber-400 bg-gradient-to-b from-amber-500/15 via-[#161C2E] to-[#0E1320] shadow-xl shadow-amber-500/20 ring-2 ring-amber-400/40'
                           : 'border-white/[0.08] bg-[#0E1320]/80 hover:border-amber-400/50 hover:bg-[#121829] hover:shadow-xl hover:shadow-black/50 hover:-translate-y-0.5'
@@ -2057,11 +2057,11 @@ export default function App() {
 
                       {/* Player Avatar & Details Header */}
                       <div className="flex items-start gap-3 sm:gap-3.5 pr-20 sm:pr-24">
-                        <div className="w-13 h-13 rounded-2xl overflow-hidden bg-neutral-900 border border-white/15 flex items-center justify-center shrink-0 shadow-md group-hover:border-amber-400/60 transition-colors">
+                        <div className="w-16 h-16 sm:w-14 sm:h-14 rounded-2xl overflow-hidden bg-neutral-900 border border-white/15 flex items-center justify-center shrink-0 shadow-md group-hover:border-amber-400/60 transition-colors">
                           {player.photo_url ? (
                             <img src={player.photo_url} alt={player.name} className="w-full h-full object-cover" />
                           ) : (
-                            <span className="text-2xl">{getRoleBadge(player.role).icon}</span>
+                            <span className="text-3xl">{getRoleBadge(player.role).icon}</span>
                           )}
                         </div>
 
