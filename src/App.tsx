@@ -159,7 +159,7 @@ export default function App() {
 
       if (data && Array.isArray(data)) {
         data
-          .filter((p) => p && !/^[ab][1-4]-/.test(p.id))
+          .filter((p) => p)
           .forEach((p) => {
             const rawBio = p.bio || '';
             const parsedFlat = p.flat_no || rawBio.match(/\[Flat:\s*([^\]|]+)/i)?.[1]?.trim() || undefined;
