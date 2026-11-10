@@ -1,10 +1,13 @@
 // WhatsApp Authentication Setup Script
 // Run this locally on your computer to authenticate with WhatsApp
 
-const { makeWASocket, useMultiFileAuthState, DisconnectReason } = require("@whiskeysockets/baileys");
-const QRCode = require("qrcode-terminal");
-const fs = require("fs");
-const path = require("path");
+import { makeWASocket, useMultiFileAuthState, DisconnectReason } from "@whiskeysockets/baileys";
+import QRCode from "qrcode-terminal";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const authPath = path.join(__dirname, "auth_info_baileys");
 

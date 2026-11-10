@@ -58,14 +58,15 @@ Example:
 cd /path/to/player-registration-portal
 ```
 
-3. Install dependencies:
+3. **Option A: Quick Start (Recommended)**
 ```bash
-npm install @whiskeysockets/baileys qrcode-terminal
+chmod +x whatsapp-auth.sh
+./whatsapp-auth.sh
 ```
 
-4. Run authentication script:
+4. **Option B: Manual Command**
 ```bash
-node whatsapp-auth-setup.js
+node --experimental-global-webcrypto whatsapp-auth-setup.js
 ```
 
 5. **Important**: 
@@ -75,7 +76,7 @@ node whatsapp-auth-setup.js
    - **Scan the QR code** within 20 seconds
    - Wait for "✅ SUCCESS! WhatsApp Connected!"
 
-6. A folder `auth_info_baileys/` will be created automatically
+6. A folder `auth_info_baileys/` will be created automatically with auth files
 
 ---
 
