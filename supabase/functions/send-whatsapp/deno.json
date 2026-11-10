@@ -1,6 +1,0 @@
-{
-  "imports": {
-    "@whiskeysockets/baileys": "npm:@whiskeysockets/baileys@6.4.0",
-    "qrcode-terminal": "npm:qrcode-terminal@0.12.0"
-  }
-}
