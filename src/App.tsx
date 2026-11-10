@@ -151,6 +151,9 @@ export default function App() {
         .select('*')
         .order('created_at', { ascending: false });
 
+      console.log('Supabase fetch - Data:', data);
+      console.log('Supabase fetch - Error:', error);
+
       if (error) {
         console.warn('Supabase fetch error:', error.message);
       }
@@ -225,6 +228,8 @@ export default function App() {
         const tB = new Date(b.created_at || 0).getTime();
         return tB - tA;
       });
+
+      console.log('Processed players - Count:', sorted.length, 'Players:', sorted);
 
       setRegisteredPlayers(sorted);
       setNewlyRegisteredPlayer((prev) => (prev && map.has(prev.id) ? prev : null));
