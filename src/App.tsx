@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import confetti from 'canvas-confetti';
+import { Analytics } from '@vercel/analytics/react';
 import { supabase } from './lib/supabase';
 import { Player, PlayerRole, PaymentMethod, PaymentStatus } from './types';
 import { cn } from './lib/utils';
@@ -2592,7 +2593,7 @@ export default function App() {
       <footer className="border-t border-white/[0.06] bg-[#0E1320] py-6 text-center text-xs text-slate-500">
         <p>Premier League 3.0 • Official Player Registration & Live Players Portal</p>
       </footer>
+      <Analytics />
     </div>
   );
 }
-
