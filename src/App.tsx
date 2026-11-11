@@ -766,6 +766,7 @@ export default function App() {
     rosterSearch.trim() ||
     rosterRoleFilter !== 'all' ||
     rosterGenderFilter !== 'all' ||
+    rosterTournamentFilter !== 'all' ||
     rosterStatusFilter !== 'all' ||
     rosterSortBy !== 'newest'
   );
@@ -774,6 +775,7 @@ export default function App() {
     setRosterSearch('');
     setRosterRoleFilter('all');
     setRosterGenderFilter('all');
+    setRosterTournamentFilter('all');
     setRosterStatusFilter('all');
     setRosterSortBy('newest');
   };
@@ -797,6 +799,7 @@ export default function App() {
       }
       if (rosterRoleFilter !== 'all' && p.role !== rosterRoleFilter) return false;
       if (rosterGenderFilter !== 'all' && p.gender !== rosterGenderFilter) return false;
+      if (rosterTournamentFilter !== 'all' && p.tournament_id !== rosterTournamentFilter) return false;
       if (rosterStatusFilter !== 'all') {
         const isPaid = p.payment_status === 'paid';
         if (rosterStatusFilter === 'paid' && !isPaid) return false;
@@ -2010,6 +2013,28 @@ export default function App() {
                         'px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95',
                         rosterGenderFilter === chip.id
                           ? 'bg-amber-500 text-black shadow-sm'
+                          : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
+                      )}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+
+                  <span className="text-slate-600 px-1 shrink-0">|</span>
+
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">League:</span>
+                  {[
+                    { id: 'all', label: `All` },
+                    { id: 'kapl-3-mens', label: `👨 Men's` },
+                    { id: 'kapl-3-womens', label: `👩 Women's` },
+                  ].map((chip) => (
+                    <button
+                      key={chip.id}
+                      onClick={() => setRosterTournamentFilter(chip.id as any)}
+                      className={cn(
+                        'px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95',
+                        rosterTournamentFilter === chip.id
+                          ? 'bg-blue-500 text-white shadow-sm'
                           : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
                       )}
                     >
