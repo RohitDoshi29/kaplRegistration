@@ -11,7 +11,7 @@ export const DATABASE_CONFIG = {
   USE_D1: import.meta.env.VITE_USE_D1 === 'true' || false,
 
   // D1 Worker URL (e.g., https://api.example.com)
-  D1_WORKER_URL: import.meta.env.VITE_D1_WORKER_URL || '',
+  D1_WORKER_URL: import.meta.env.VITE_D1_API_URL || import.meta.env.VITE_D1_WORKER_URL || '',
 
   // D1 API Key for authentication
   D1_API_KEY: import.meta.env.VITE_D1_API_KEY || '',
