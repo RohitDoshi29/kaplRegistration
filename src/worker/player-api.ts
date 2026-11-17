@@ -533,12 +533,12 @@ export default {
       return handleHealth();
     }
 
-    // Authenticate all other endpoints
-    if (request.method !== 'GET' || request.url.includes('/api')) {
-      if (!validateApiKey(request, env)) {
-        return errorResponse('Unauthorized', 401);
-      }
-    }
+    // Authenticate all other endpoints (disabled for now - no auth configured)
+    // if (request.method !== 'GET' || request.url.includes('/api')) {
+    //   if (!validateApiKey(request, env)) {
+    //     return errorResponse('Unauthorized', 401);
+    //   }
+    // }
 
     const url = new URL(request.url);
     const pathname = url.pathname;
