@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { supabase } from './lib/supabase';
+import { getDatabase, isUsingD1 } from './lib/get-database';
 import { Player, PlayerRole, PaymentMethod, PaymentStatus } from './types';
 import { cn } from './lib/utils';
 import {
@@ -142,44 +142,12 @@ export default function App() {
   const [copiedModalUtr, setCopiedModalUtr] = useState(false);
 
 
-  // Fetch all registered players from Supabase (omits heavy payment_receipt_url for 10x faster loading)
+  // Fetch all registered players from database (Supabase or D1)
   const fetchRegisteredPlayers = useCallback(async () => {
     setIsLoadingRoster(true);
     try {
-      const { data, error } = await supabase
-        .from('players')
-        .select(`
-          id,
-          name,
-          mobile_number,
-          email,
-          role,
-          batting_style,
-          bowling_style,
-          jersey_number,
-          tournament_id,
-          base_price,
-          photo_url,
-          experience,
-          previous_team,
-          past_achievements,
-          bio,
-          gender,
-          age,
-          flat_no,
-          payment_method,
-          payment_status,
-          transaction_id,
-          payment_amount,
-          created_at,
-          updated_at,
-          payment_verification
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.warn('Supabase fetch error:', error.message);
-      }
+      const db = getDatabase();
+      const data = await db.getPlayers({ sortBy: 'newest', limit: 10000 });
 
       const map = new Map<string, Player>();
 
@@ -231,7 +199,7 @@ export default function App() {
             }
           }
         } catch {}
-      } else if (error) {
+      } else {
         // Fallback to local storage only if database is offline or unreachable
         try {
           const rawLocal = localStorage.getItem('portal_registered_players');
@@ -585,51 +553,13 @@ export default function App() {
     };
 
     try {
-      const basePayload: any = {
-        id: playerId,
-        name: newPlayer.name,
-        photo_url: newPlayer.photo_url,
-        role: newPlayer.role,
-        batting_style: newPlayer.batting_style,
-        bowling_style: newPlayer.bowling_style,
-        jersey_number: null,
-        mobile_number: newPlayer.mobile_number,
-        email: newPlayer.email,
-        experience: newPlayer.experience,
-        previous_team: newPlayer.previous_team,
-        past_achievements: newPlayer.past_achievements,
-        bio: bioText,
-        gender: newPlayer.gender,
-        payment_method: newPlayer.payment_method,
-        payment_status: newPlayer.payment_status,
-        transaction_id: newPlayer.transaction_id,
-        payment_amount: newPlayer.payment_amount,
-        payment_receipt_url: newPlayer.payment_receipt_url,
-        tournament_id: 'kapl-3-mens',
-        base_price: 100,
-      };
-
-      // 1. First try inserting with direct age and flat_no columns
-      let { error: insertError } = await supabase.from('players').insert({
-        ...basePayload,
+      const db = getDatabase();
+      await db.createPlayer({
+        ...newPlayer,
         age: numAge,
         flat_no: cleanFlat,
+        bio: bioText,
       });
-
-      // Fallback: If Postgres schema does not have age or flat_no columns yet, insert basePayload (which stores them in bio)
-      if (
-        insertError &&
-        (insertError.code === 'PGRST204' ||
-          insertError.message?.includes('column') ||
-          insertError.message?.includes('schema cache'))
-      ) {
-        const fallbackRes = await supabase.from('players').insert(basePayload);
-        insertError = fallbackRes.error;
-      }
-
-      if (insertError) {
-        throw new Error(insertError.message);
-      }
 
       // 2. Local storage persistence
       try {
