@@ -6,7 +6,16 @@
   "scripts": {
     "dev": "vite --port 3000 --host",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "worker:dev": "wrangler dev",
+    "worker:deploy": "wrangler deploy",
+    "worker:deploy:prod": "wrangler deploy --env production",
+    "worker:migrate": "wrangler d1 migrations apply player-portal --remote",
+    "worker:seed": "wrangler d1 execute player-portal --remote --file=./scripts/seed.sql",
+    "worker:tail": "wrangler tail",
+    "db:create": "wrangler d1 create player-portal",
+    "db:list": "wrangler d1 list",
+    "db:backup": "wrangler d1 export player-portal > backup.sql"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.89.0",
@@ -17,7 +26,8 @@
     "qrcode-terminal": "^0.12.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tailwind-merge": "^2.6.0"
+    "tailwind-merge": "^2.6.0",
+    "@cloudflare/workers-types": "^4.20240530.1"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
@@ -29,6 +39,7 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
-    "vite": "^8.3.7"
+    "vite": "^8.3.7",
+    "wrangler": "^3.30.0"
   }
 }
