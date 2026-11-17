@@ -238,19 +238,7 @@ export default function App() {
   useEffect(() => {
     fetchRegisteredPlayers();
 
-    // 1. Supabase Postgres Realtime Subscription
-    const channel = supabase
-      .channel('player-portal-realtime-feed')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'players' },
-        () => {
-          fetchRegisteredPlayers();
-        }
-      )
-      .subscribe();
-
-    // 2. Window focus & visibility sync (immediately updates when switching back from Supabase dashboard)
+    // Window focus & visibility sync
     const handleSync = () => {
       fetchRegisteredPlayers();
     };
@@ -261,13 +249,12 @@ export default function App() {
       }
     });
 
-    // 3. Periodic fallback poll every 60 seconds (reduced from 5s to avoid timeout)
+    // Periodic poll every 60 seconds
     const intervalId = setInterval(() => {
       fetchRegisteredPlayers();
     }, 60000);
 
     return () => {
-      supabase.removeChannel(channel);
       window.removeEventListener('focus', handleSync);
       clearInterval(intervalId);
     };
@@ -288,11 +275,8 @@ export default function App() {
     setSelectedPlayerModal(player);
     if (!player.payment_receipt_url) {
       try {
-        const { data } = await supabase
-          .from('players')
-          .select('payment_receipt_url')
-          .eq('id', player.id)
-          .single();
+        const db = getDatabase();
+        const data = await db.getPlayerById(player.id);
         if (data?.payment_receipt_url) {
           setSelectedPlayerModal((prev) =>
             prev && prev.id === player.id
