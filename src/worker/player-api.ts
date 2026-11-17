@@ -85,6 +85,24 @@ function handleOptions(): Response {
 }
 
 /**
+ * Convert "NULL" string values to actual null
+ */
+function cleanNullStrings(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(cleanNullStrings);
+  }
+  if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj).map(([k, v]) => [
+        k,
+        v === 'NULL' ? null : cleanNullStrings(v),
+      ])
+    );
+  }
+  return obj;
+}
+
+/**
  * GET /api/players - Get all players with optional filtering and pagination
  */
 async function handleGetPlayers(request: Request, env: Env): Promise<Response> {
@@ -112,7 +130,7 @@ async function handleGetPlayers(request: Request, env: Env): Promise<Response> {
     const countResult = await countStmt.first<{ count: number }>();
 
     return jsonResponse({
-      players: result.results || [],
+      players: cleanNullStrings(result.results || []),
       total: countResult?.count || 0,
       limit,
       offset,
@@ -144,7 +162,7 @@ async function handleGetPlayerById(
       return errorResponse('Player not found', 404);
     }
 
-    return jsonResponse({ player });
+    return jsonResponse({ player: cleanNullStrings(player) });
   } catch (error) {
     console.error('GET /api/players/:id error:', error);
     return errorResponse('Failed to fetch player', 500);
