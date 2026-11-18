@@ -25,9 +25,9 @@ import { Player, PlayerRole, PaymentStatus } from '../types';
 // Type definitions for Cloudflare Workers environment
 interface Env {
   DB: D1Database;
-  API_KEY: string;
-  RESEND_API_KEY: string;
-  ALERT_TO_EMAIL: string;
+  API_KEY?: string;
+  RESEND_API_KEY?: string;
+  ALERT_TO_EMAIL?: string;
 }
 
 /**
