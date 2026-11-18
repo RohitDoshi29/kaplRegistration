@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import confetti from 'canvas-confetti';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { getDatabase, isUsingD1 } from './lib/get-database';
 import { Player, PlayerRole, PaymentMethod, PaymentStatus } from './types';
 import { cn } from './lib/utils';
@@ -86,6 +87,7 @@ const formatExperienceLabel = (exp?: string) => {
 };
 
 export default function App() {
+  const gridContainerRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<'register' | 'roster'>('register');
 
   // Form State
@@ -1956,9 +1958,24 @@ export default function App() {
                 )}
               </div>
             ) : rosterViewMode === 'grid' ? (
-              /* Enhanced Grid View */
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                {filteredRoster.map((player) => {
+              /* Enhanced Grid View with Virtual Scrolling */
+              (() => {
+                const rowVirtualizer = useVirtualizer({
+                  count: Math.ceil(filteredRoster.length / 4),
+                  size: 380,
+                  overscan: 5,
+                  estimateSize: useCallback(() => 380, []),
+                });
+
+                return (
+                  <div ref={gridContainerRef} className="space-y-5" style={{ height: 'auto' }}>
+                    {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+                      const rowStart = virtualItem.index * 4;
+                      const rowPlayers = filteredRoster.slice(rowStart, rowStart + 4);
+
+                      return (
+                        <div key={virtualItem.index} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                          {rowPlayers.map((player) => {
                   const isNewlyRegistered = newlyRegisteredPlayer && player.id === newlyRegisteredPlayer.id;
 
                   return (
@@ -2070,9 +2087,14 @@ export default function App() {
                         </span>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                          );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()
             ) : (
               /* Enhanced Table View */
               <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 overflow-hidden shadow-xl">
