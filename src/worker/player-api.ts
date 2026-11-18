@@ -26,6 +26,8 @@ import { Player, PlayerRole, PaymentStatus } from '../types';
 interface Env {
   DB: D1Database;
   API_KEY: string;
+  RESEND_API_KEY: string;
+  ALERT_TO_EMAIL: string;
 }
 
 /**
@@ -100,6 +102,62 @@ function cleanNullStrings(obj: any): any {
     );
   }
   return obj;
+}
+
+/**
+ * Send email alert when player registers
+ */
+async function sendRegistrationEmail(player: Player, env: Env): Promise<void> {
+  try {
+    if (!env.RESEND_API_KEY || !env.ALERT_TO_EMAIL) {
+      console.warn('Email config not set');
+      return;
+    }
+
+    const emailBody = `
+New Player Registration!
+
+Name: ${player.name}
+Mobile: ${player.mobile_number}
+Email: ${player.email || 'Not provided'}
+Role: ${player.role}
+Flat: ${player.flat_no || 'Not provided'}
+Age: ${player.age || 'Not provided'}
+Payment Status: ${player.payment_status}
+UTR: ${player.transaction_id || 'Not provided'}
+
+Registered at: ${new Date().toLocaleString()}
+    `;
+
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'noreply@resend.dev',
+        to: env.ALERT_TO_EMAIL,
+        subject: `🎯 New Player: ${player.name}`,
+        html: `
+          <div style="font-family: Arial; padding: 20px; background: #f5f5f5;">
+            <h2>🎯 New Player Registration!</h2>
+            <p><strong>Name:</strong> ${player.name}</p>
+            <p><strong>Mobile:</strong> ${player.mobile_number}</p>
+            <p><strong>Email:</strong> ${player.email || 'Not provided'}</p>
+            <p><strong>Role:</strong> ${player.role}</p>
+            <p><strong>Flat:</strong> ${player.flat_no || 'Not provided'}</p>
+            <p><strong>Age:</strong> ${player.age || 'Not provided'}</p>
+            <p><strong>Payment:</strong> ${player.payment_status}</p>
+            <p><strong>UTR:</strong> ${player.transaction_id || 'Not provided'}</p>
+            <p style="color: #666; font-size: 12px;">Registered: ${new Date().toLocaleString()}</p>
+          </div>
+        `,
+      }),
+    });
+  } catch (error) {
+    console.error('Failed to send email:', error);
+  }
 }
 
 /**
@@ -319,6 +377,13 @@ async function handleCreatePlayer(request: Request, env: Env): Promise<Response>
       createdAt,
       createdAt
     ).run();
+
+    // Send email alert asynchronously (don't block response)
+    const fullPlayer: Player = {
+      ...player,
+      created_at: createdAt,
+    } as Player;
+    sendRegistrationEmail(fullPlayer, env).catch(err => console.error('Email send error:', err));
 
     return jsonResponse({ player: { ...player, created_at: createdAt } }, 201);
   } catch (error) {

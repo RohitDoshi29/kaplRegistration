@@ -1,10 +1,10 @@
 # Wrangler Configuration for Cloudflare D1 Deployment
 name = "player-registration-portal"
-type = "javascript"
 main = "src/worker/player-api.ts"
 compatibility_date = "2024-12-16"
-route = "https://player-registration.workers.dev/*"
-zone_id = ""
+
+# Environment variables - add via: npx wrangler secret put RESEND_API_KEY
+# Or set in Cloudflare dashboard → Workers → Settings → Variables
 
 # Cloudflare D1 Database Binding
 [[d1_databases]]
