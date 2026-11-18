@@ -109,8 +109,11 @@ function cleanNullStrings(obj: any): any {
  */
 async function sendRegistrationEmail(player: Player, env: Env): Promise<void> {
   try {
-    if (!env.RESEND_API_KEY || !env.ALERT_TO_EMAIL) {
-      console.warn('Email config not set');
+    const apiKey = env.RESEND_API_KEY;
+    const toEmail = env.ALERT_TO_EMAIL || 'kaplcrickettournament@gmail.com';
+
+    if (!apiKey) {
+      console.warn('No Resend API key configured');
       return;
     }
 
@@ -132,12 +135,12 @@ Registered at: ${new Date().toLocaleString()}
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         from: 'noreply@resend.dev',
-        to: env.ALERT_TO_EMAIL,
+        to: toEmail,
         subject: `🎯 New Player: ${player.name}`,
         html: `
           <div style="font-family: Arial; padding: 20px; background: #f5f5f5;">
