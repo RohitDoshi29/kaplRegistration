@@ -5,7 +5,6 @@ compatibility_date = "2024-12-16"
 
 # Production environment
 [env.production]
-vars = { ALERT_TO_EMAIL = "kaplcrickettournament@gmail.com" }
 
 [[env.production.d1_databases]]
 binding = "DB"
