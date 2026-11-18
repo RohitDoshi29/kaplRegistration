@@ -1875,67 +1875,6 @@ export default function App() {
               {/* Row 2: Filter Pills - horizontal scrollable strip on mobile with no scrollbar */}
               <div className="pt-2 border-t border-white/[0.05] space-y-2">
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 sm:mx-0 sm:px-0 sm:flex-wrap scrollbar-none text-xs">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">Status:</span>
-                  <button
-                    onClick={() => setRosterStatusFilter('all')}
-                    className={cn(
-                      'px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95',
-                      rosterStatusFilter === 'all'
-                        ? 'bg-white text-black shadow-sm'
-                        : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
-                    )}
-                  >
-                    All ({rosterStats.total})
-                  </button>
-                  <button
-                    onClick={() => setRosterStatusFilter('paid')}
-                    className={cn(
-                      'px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shrink-0 active:scale-95',
-                      rosterStatusFilter === 'paid'
-                        ? 'bg-emerald-500 text-black shadow-sm'
-                        : 'bg-white/[0.04] text-emerald-400 hover:bg-emerald-500/10'
-                    )}
-                  >
-                    <CheckCircle2 className="w-3 h-3" />
-                    Verified ({rosterStats.paid})
-                  </button>
-                  <button
-                    onClick={() => setRosterStatusFilter('pending')}
-                    className={cn(
-                      'px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shrink-0 active:scale-95',
-                      rosterStatusFilter === 'pending'
-                        ? 'bg-amber-500 text-black shadow-sm'
-                        : 'bg-white/[0.04] text-amber-400 hover:bg-amber-500/10'
-                    )}
-                  >
-                    <Clock className="w-3 h-3" />
-                    Pending ({rosterStats.pending})
-                  </button>
-
-                  <span className="text-slate-600 px-1 shrink-0">|</span>
-
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">Gender:</span>
-                  {[
-                    { id: 'all', label: `All` },
-                    { id: 'male', label: `👨 Male (${rosterStats.maleCount})` },
-                    { id: 'female', label: `👩 Female (${rosterStats.femaleCount})` },
-                  ].map((chip) => (
-                    <button
-                      key={chip.id}
-                      onClick={() => setRosterGenderFilter(chip.id as any)}
-                      className={cn(
-                        'px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95',
-                        rosterGenderFilter === chip.id
-                          ? 'bg-amber-500 text-black shadow-sm'
-                          : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
-                      )}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-
-                  <span className="text-slate-600 px-1 shrink-0">|</span>
-
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">League:</span>
                   {[
                     { id: 'all', label: `All` },
@@ -1955,8 +1894,6 @@ export default function App() {
                       {chip.label}
                     </button>
                   ))}
-
-                  <span className="text-slate-600 px-1 shrink-0">|</span>
 
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">Role:</span>
                   {[

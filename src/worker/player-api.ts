@@ -30,6 +30,10 @@ interface Env {
   ALERT_TO_EMAIL?: string;
 }
 
+interface ExecutionContext {
+  waitUntil(promise: Promise<any>): void;
+}
+
 /**
  * Type guard for D1Database
  */
@@ -112,54 +116,114 @@ async function sendRegistrationEmail(player: Player, env: Env): Promise<void> {
     const apiKey = env.RESEND_API_KEY;
     const toEmail = env.ALERT_TO_EMAIL || 'rohit.doshi2007@gmail.com';
 
+    console.log('📧 Starting email send...');
+    console.log('   To:', toEmail);
+    console.log('   API Key exists:', !!apiKey);
+
     if (!apiKey) {
-      console.warn('No Resend API key configured');
+      console.warn('❌ No Resend API key configured');
       return;
     }
 
-    const emailBody = `
-New Player Registration!
-
-Name: ${player.name}
-Mobile: ${player.mobile_number}
-Email: ${player.email || 'Not provided'}
-Role: ${player.role}
-Flat: ${player.flat_no || 'Not provided'}
-Age: ${player.age || 'Not provided'}
-Payment Status: ${player.payment_status}
-UTR: ${player.transaction_id || 'Not provided'}
-
-Registered at: ${new Date().toLocaleString()}
-    `;
-
-    await fetch('https://api.resend.com/emails', {
+    console.log('📤 Calling Resend API...');
+    const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'noreply@resend.dev',
+        from: 'onboarding@resend.dev',
         to: toEmail,
-        subject: `🎯 New Player: ${player.name}`,
+        subject: `🎯 New Player Registration: ${player.name}`,
         html: `
-          <div style="font-family: Arial; padding: 20px; background: #f5f5f5;">
-            <h2>🎯 New Player Registration!</h2>
-            <p><strong>Name:</strong> ${player.name}</p>
-            <p><strong>Mobile:</strong> ${player.mobile_number}</p>
-            <p><strong>Email:</strong> ${player.email || 'Not provided'}</p>
-            <p><strong>Role:</strong> ${player.role}</p>
-            <p><strong>Flat:</strong> ${player.flat_no || 'Not provided'}</p>
-            <p><strong>Age:</strong> ${player.age || 'Not provided'}</p>
-            <p><strong>Payment:</strong> ${player.payment_status}</p>
-            <p><strong>UTR:</strong> ${player.transaction_id || 'Not provided'}</p>
-            <p style="color: #666; font-size: 12px;">Registered: ${new Date().toLocaleString()}</p>
-          </div>
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;">
+              <div style="max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px;">
+                <div style="background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden;">
+                  <!-- Header -->
+                  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 20px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 28px;">🎯 New Player Registration!</h1>
+                  </div>
+
+                  <!-- Content -->
+                  <div style="padding: 30px 20px;">
+                    <p style="color: #333; font-size: 16px; margin-top: 0;">A new player has registered for the tournament:</p>
+
+                    <table style="width: 100%; margin: 20px 0; border-collapse: collapse;">
+                      <tr style="border-bottom: 1px solid #e0e0e0;">
+                        <td style="padding: 12px; font-weight: 600; color: #667eea; width: 35%;">Name</td>
+                        <td style="padding: 12px; color: #333;">${player.name}</td>
+                      </tr>
+                      <tr style="border-bottom: 1px solid #e0e0e0;">
+                        <td style="padding: 12px; font-weight: 600; color: #667eea;">Mobile</td>
+                        <td style="padding: 12px; color: #333;">${player.mobile_number}</td>
+                      </tr>
+                      <tr style="border-bottom: 1px solid #e0e0e0;">
+                        <td style="padding: 12px; font-weight: 600; color: #667eea;">Email</td>
+                        <td style="padding: 12px; color: #333;">${player.email || 'Not provided'}</td>
+                      </tr>
+                      <tr style="border-bottom: 1px solid #e0e0e0;">
+                        <td style="padding: 12px; font-weight: 600; color: #667eea;">Role</td>
+                        <td style="padding: 12px; color: #333;">${player.role || 'Not specified'}</td>
+                      </tr>
+                      <tr style="border-bottom: 1px solid #e0e0e0;">
+                        <td style="padding: 12px; font-weight: 600; color: #667eea;">Flat/Block</td>
+                        <td style="padding: 12px; color: #333;">${player.flat_no || 'Not provided'}</td>
+                      </tr>
+                      <tr style="border-bottom: 1px solid #e0e0e0;">
+                        <td style="padding: 12px; font-weight: 600; color: #667eea;">Age</td>
+                        <td style="padding: 12px; color: #333;">${player.age || 'Not provided'}</td>
+                      </tr>
+                      <tr style="border-bottom: 1px solid #e0e0e0;">
+                        <td style="padding: 12px; font-weight: 600; color: #667eea;">Payment Status</td>
+                        <td style="padding: 12px; color: #333;">
+                          <span style="background: ${player.payment_status === 'paid' ? '#4caf50' : '#ff9800'}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                            ${(player.payment_status || 'pending').toUpperCase()}
+                          </span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 12px; font-weight: 600; color: #667eea;">Transaction ID</td>
+                        <td style="padding: 12px; color: #333;">${player.transaction_id || 'Not provided'}</td>
+                      </tr>
+                    </table>
+
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #999;">
+                      <p style="margin: 5px 0;">Registered: ${new Date().toLocaleString()}</p>
+                      <p style="margin: 5px 0;">From: KAPL Cricket Tournament Registration Portal</p>
+                    </div>
+                  </div>
+
+                  <!-- Footer -->
+                  <div style="background: #f9f9f9; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
+                    <p style="color: #999; font-size: 12px; margin: 0;">© 2026 KAPL Cricket Tournament. All rights reserved.</p>
+                  </div>
+                </div>
+              </div>
+            </body>
+          </html>
         `,
       }),
     });
+
+    console.log('✅ Response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Resend API error:', response.status, errorText);
+      return;
+    }
+
+    const data = await response.json();
+    console.log('✅ Email sent successfully! ID:', data.id);
   } catch (error) {
-    console.error('Failed to send email:', error);
+    console.error('❌ Failed to send email:', error);
   }
 }
 
@@ -327,7 +391,7 @@ async function handleGetByStatus(
 /**
  * POST /api/players - Create new player
  */
-async function handleCreatePlayer(request: Request, env: Env): Promise<Response> {
+async function handleCreatePlayer(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
   try {
     const player = (await request.json()) as Partial<Player>;
 
@@ -382,11 +446,15 @@ async function handleCreatePlayer(request: Request, env: Env): Promise<Response>
     ).run();
 
     // Send email alert asynchronously (don't block response)
+    console.log('🔔 Sending email to:', env.ALERT_TO_EMAIL);
     const fullPlayer: Player = {
       ...player,
       created_at: createdAt,
     } as Player;
-    sendRegistrationEmail(fullPlayer, env).catch(err => console.error('Email send error:', err));
+    const emailPromise = sendRegistrationEmail(fullPlayer, env).catch(err => console.error('Email send error:', err));
+    if (ctx) {
+      ctx.waitUntil(emailPromise);
+    }
 
     return jsonResponse({ player: { ...player, created_at: createdAt } }, 201);
   } catch (error) {
@@ -605,10 +673,21 @@ function handleHealth(): Response {
 }
 
 /**
+ * GET /debug - Debug endpoint to check env vars
+ */
+function handleDebug(env: Env): Response {
+  return jsonResponse({
+    ALERT_TO_EMAIL: env.ALERT_TO_EMAIL || 'NOT SET',
+    RESEND_API_KEY: env.RESEND_API_KEY ? 'SET' : 'NOT SET',
+    DB: env.DB ? 'CONFIGURED' : 'NOT CONFIGURED',
+  });
+}
+
+/**
  * Main request router
  */
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
       return handleOptions();
@@ -617,6 +696,11 @@ export default {
     // Health check endpoint (no authentication)
     if (request.url.includes('/health')) {
       return handleHealth();
+    }
+
+    // Debug endpoint
+    if (request.url.includes('/debug')) {
+      return handleDebug(env);
     }
 
     // Authenticate all other endpoints (disabled for now - no auth configured)
@@ -636,7 +720,7 @@ export default {
       }
 
       if (pathname === '/api/players' && request.method === 'POST') {
-        return handleCreatePlayer(request, env);
+        return handleCreatePlayer(request, env, ctx);
       }
 
       if (pathname === '/api/players/batch' && request.method === 'POST') {
