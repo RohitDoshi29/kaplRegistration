@@ -3,11 +3,11 @@ name = "player-registration-portal"
 main = "src/worker/player-api.ts"
 compatibility_date = "2024-12-16"
 
-# Environment variables - add via: npx wrangler secret put RESEND_API_KEY
-# Or set in Cloudflare dashboard → Workers → Settings → Variables
+# Production environment
+[env.production]
+vars = { ALERT_TO_EMAIL = "kaplcrickettournament@gmail.com" }
 
-# Cloudflare D1 Database Binding
-[[d1_databases]]
+[[env.production.d1_databases]]
 binding = "DB"
 database_name = "player-registration-d1"
 database_id = "2c49679d-3a40-4397-9a37-8b8933febac3"
