@@ -110,7 +110,7 @@ function cleanNullStrings(obj: any): any {
 async function sendRegistrationEmail(player: Player, env: Env): Promise<void> {
   try {
     const apiKey = env.RESEND_API_KEY;
-    const toEmail = env.ALERT_TO_EMAIL || 'kaplcrickettournament@gmail.com';
+    const toEmail = env.ALERT_TO_EMAIL || 'rohit.doshi2007@gmail.com';
 
     if (!apiKey) {
       console.warn('No Resend API key configured');
