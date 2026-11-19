@@ -4,6 +4,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { getDatabase, isUsingD1 } from './lib/get-database';
 import { Player, PlayerRole, PaymentMethod, PaymentStatus } from './types';
 import { cn } from './lib/utils';
+import RegistrationCountdown from './components/RegistrationCountdown';
 import {
   Trophy,
   UserPlus,
@@ -818,6 +819,9 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {/* Registration Countdown Timer */}
+      <RegistrationCountdown />
 
       {/* Main Content Area */}
       <main className="flex-1 container mx-auto px-3 sm:px-4 py-3 sm:py-8 max-w-7xl">
