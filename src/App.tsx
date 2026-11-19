@@ -4,6 +4,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { getDatabase, isUsingD1 } from './lib/get-database';
 import { Player, PlayerRole, PaymentMethod, PaymentStatus } from './types';
 import { cn } from './lib/utils';
+import { compressImage, isBlobUrl } from './lib/image-compress';
 import RegistrationCountdown from './components/RegistrationCountdown';
 import {
   Trophy,
@@ -155,41 +156,56 @@ export default function App() {
       const map = new Map<string, Player>();
 
       if (data && Array.isArray(data)) {
-        data
-          .filter((p) => p)
-          .forEach((p) => {
-            const rawBio = p.bio || '';
-            const parsedFlat = p.flat_no || rawBio.match(/\[Flat:\s*([^\]|]+)/i)?.[1]?.trim() || undefined;
-            const parsedAge = p.age || rawBio.match(/Age:\s*([^\]|]+)/i)?.[1]?.trim() || undefined;
-            const cleanBio = rawBio.replace(/\[Flat:[^\]]+\]\s*/i, '').trim();
+        const processedPlayers = await Promise.all(
+          data
+            .filter((p) => p)
+            .map(async (p) => {
+              const rawBio = p.bio || '';
+              const parsedFlat = p.flat_no || rawBio.match(/\[Flat:\s*([^\]|]+)/i)?.[1]?.trim() || undefined;
+              const parsedAge = p.age || rawBio.match(/Age:\s*([^\]|]+)/i)?.[1]?.trim() || undefined;
+              const cleanBio = rawBio.replace(/\[Flat:[^\]]+\]\s*/i, '').trim();
 
-            map.set(p.id, {
-              id: p.id,
-              name: p.name,
-              role: (p.role as PlayerRole) || 'all_rounder',
-              batting_style: p.batting_style || 'Right-hand bat',
-              bowling_style: p.bowling_style || 'Right-arm medium',
-              jersey_number: p.jersey_number,
-              tournament_id: p.tournament_id || 'kapl-3-mens',
-              base_price: Number(p.base_price || 100),
-              photo_url: p.photo_url,
-              mobile_number: p.mobile_number || '',
-              email: p.email || undefined,
-              experience: p.experience || undefined,
-              previous_team: p.previous_team || undefined,
-              past_achievements: p.past_achievements || undefined,
-              bio: cleanBio || undefined,
-              gender: (p.gender as 'male' | 'female') || undefined,
-              age: parsedAge,
-              flat_no: parsedFlat,
-              payment_method: p.payment_method || 'upi_qr',
-              payment_status: (p.payment_status as PaymentStatus) || 'pending',
-              transaction_id: p.transaction_id || undefined,
-              payment_amount: p.payment_amount || undefined,
-              payment_receipt_url: p.payment_receipt_url || undefined,
-              created_at: p.created_at,
-            });
-          });
+              let photoUrl = p.photo_url;
+              if (photoUrl && !isBlobUrl(photoUrl)) {
+                try {
+                  photoUrl = await compressImage(photoUrl, 200, 0.65);
+                } catch {
+                  photoUrl = p.photo_url;
+                }
+              }
+
+              return {
+                id: p.id,
+                name: p.name,
+                role: (p.role as PlayerRole) || 'all_rounder',
+                batting_style: p.batting_style || 'Right-hand bat',
+                bowling_style: p.bowling_style || 'Right-arm medium',
+                jersey_number: p.jersey_number,
+                tournament_id: p.tournament_id || 'kapl-3-mens',
+                base_price: Number(p.base_price || 100),
+                photo_url: photoUrl,
+                mobile_number: p.mobile_number || '',
+                email: p.email || undefined,
+                experience: p.experience || undefined,
+                previous_team: p.previous_team || undefined,
+                past_achievements: p.past_achievements || undefined,
+                bio: cleanBio || undefined,
+                gender: (p.gender as 'male' | 'female') || undefined,
+                age: parsedAge,
+                flat_no: parsedFlat,
+                payment_method: p.payment_method || 'upi_qr',
+                payment_status: (p.payment_status as PaymentStatus) || 'pending',
+                transaction_id: p.transaction_id || undefined,
+                payment_amount: p.payment_amount || undefined,
+                payment_receipt_url: p.payment_receipt_url || undefined,
+                created_at: p.created_at,
+              };
+            })
+        );
+
+        processedPlayers.forEach((p) => {
+          map.set(p.id, p);
+        });
 
         // Prune deleted players from local storage cache so they do not resurrect
         try {
