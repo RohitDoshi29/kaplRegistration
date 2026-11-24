@@ -773,7 +773,7 @@ export default function App() {
       }
       return 0;
     });
-  }, [registeredPlayers, rosterSearch, rosterRoleFilter, rosterTournamentFilter, rosterStatusFilter, rosterSortBy]);
+  }, [registeredPlayers, rosterSearch, rosterRoleFilter, rosterGenderFilter, rosterTournamentFilter, rosterStatusFilter, rosterSortBy]);
 
   // Role badges helper
   const getRoleBadge = (r: PlayerRole | string) => {
