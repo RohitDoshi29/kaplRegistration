@@ -133,7 +133,21 @@ export default function App() {
   const [isLoadingRoster, setIsLoadingRoster] = useState(true);
   const [rosterSearch, setRosterSearch] = useState('');
   const [rosterRoleFilter, setRosterRoleFilter] = useState('all');
-  const [rosterGenderFilter, setRosterGenderFilter] = useState<'all' | 'male' | 'female' | 'male_14plus' | 'female_14plus' | 'male_9_13' | 'female_9_13'>('all');
+  const [rosterGenderFilter, setRosterGenderFilter] = useState<
+    | 'all'
+    | 'male'
+    | 'female'
+    | 'male_18plus'
+    | 'female_18plus'
+    | 'male_13_18'
+    | 'female_13_18'
+    | 'male_9_12'
+    | 'female_9_12'
+    | 'male_14plus'
+    | 'female_14plus'
+    | 'male_9_13'
+    | 'female_9_13'
+  >('all');
   const [rosterStatusFilter, setRosterStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
   const [rosterSortBy, setRosterSortBy] = useState<'newest' | 'oldest' | 'name' | 'jersey'>('newest');
   const [rosterViewMode, setRosterViewMode] = useState<'grid' | 'table'>('grid');
@@ -685,16 +699,44 @@ export default function App() {
     const pending = total - paid;
     const maleCount = registeredPlayers.filter((p) => p.gender === 'male').length;
     const femaleCount = registeredPlayers.filter((p) => p.gender === 'female').length;
-    const menCount = registeredPlayers.filter((p) => p.gender === 'male' && (!p.age || Number(p.age) >= 14)).length;
-    const womenCount = registeredPlayers.filter((p) => p.gender === 'female' && (!p.age || Number(p.age) >= 14)).length;
-    const boysCount = registeredPlayers.filter((p) => p.gender === 'male' && p.age && Number(p.age) >= 9 && Number(p.age) <= 13).length;
-    const girlsCount = registeredPlayers.filter((p) => p.gender === 'female' && p.age && Number(p.age) >= 9 && Number(p.age) <= 13).length;
+    const men18PlusCount = registeredPlayers.filter((p) => p.gender === 'male' && (!p.age || Number(p.age) >= 18)).length;
+    const women18PlusCount = registeredPlayers.filter((p) => p.gender === 'female' && (!p.age || Number(p.age) >= 18)).length;
+    const boys13_18Count = registeredPlayers.filter((p) => p.gender === 'male' && p.age && Number(p.age) >= 13 && Number(p.age) <= 18).length;
+    const girls13_18Count = registeredPlayers.filter((p) => p.gender === 'female' && p.age && Number(p.age) >= 13 && Number(p.age) <= 18).length;
+    const boys9_12Count = registeredPlayers.filter((p) => p.gender === 'male' && p.age && Number(p.age) >= 9 && Number(p.age) <= 12).length;
+    const girls9_12Count = registeredPlayers.filter((p) => p.gender === 'female' && p.age && Number(p.age) >= 9 && Number(p.age) <= 12).length;
+
+    const menCount = men18PlusCount;
+    const womenCount = women18PlusCount;
+    const boysCount = boys13_18Count;
+    const girlsCount = girls13_18Count;
+
     const allRounders = registeredPlayers.filter((p) => p.role === 'all_rounder').length;
     const batters = registeredPlayers.filter((p) => p.role === 'batter').length;
     const bowlers = registeredPlayers.filter((p) => p.role === 'bowler').length;
     const keepers = registeredPlayers.filter((p) => p.role === 'wicket_keeper').length;
 
-    return { total, paid, pending, maleCount, femaleCount, menCount, womenCount, boysCount, girlsCount, allRounders, batters, bowlers, keepers };
+    return {
+      total,
+      paid,
+      pending,
+      maleCount,
+      femaleCount,
+      menCount,
+      womenCount,
+      boysCount,
+      girlsCount,
+      men18PlusCount,
+      women18PlusCount,
+      boys13_18Count,
+      girls13_18Count,
+      boys9_12Count,
+      girls9_12Count,
+      allRounders,
+      batters,
+      bowlers,
+      keepers,
+    };
   }, [registeredPlayers]);
 
   const hasActiveFilters = Boolean(
@@ -732,6 +774,12 @@ export default function App() {
       }
       if (rosterRoleFilter !== 'all' && p.role !== rosterRoleFilter) return false;
       if (rosterGenderFilter !== 'all') {
+        if (rosterGenderFilter === 'male_18plus' && !(p.gender === 'male' && (!p.age || Number(p.age) >= 18))) return false;
+        if (rosterGenderFilter === 'female_18plus' && !(p.gender === 'female' && (!p.age || Number(p.age) >= 18))) return false;
+        if (rosterGenderFilter === 'male_13_18' && !(p.gender === 'male' && p.age && Number(p.age) >= 13 && Number(p.age) <= 18)) return false;
+        if (rosterGenderFilter === 'female_13_18' && !(p.gender === 'female' && p.age && Number(p.age) >= 13 && Number(p.age) <= 18)) return false;
+        if (rosterGenderFilter === 'male_9_12' && !(p.gender === 'male' && p.age && Number(p.age) >= 9 && Number(p.age) <= 12)) return false;
+        if (rosterGenderFilter === 'female_9_12' && !(p.gender === 'female' && p.age && Number(p.age) >= 9 && Number(p.age) <= 12)) return false;
         if (rosterGenderFilter === 'male_14plus' && !(p.gender === 'male' && (!p.age || Number(p.age) >= 14))) return false;
         if (rosterGenderFilter === 'female_14plus' && !(p.gender === 'female' && (!p.age || Number(p.age) >= 14))) return false;
         if (rosterGenderFilter === 'male_9_13' && !(p.gender === 'male' && p.age && Number(p.age) >= 9 && Number(p.age) <= 13)) return false;
@@ -1930,20 +1978,16 @@ export default function App() {
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">Category:</span>
                   {[
                     { id: 'all', label: `All` },
-                    { id: 'male_14plus', label: `👨 Men (${rosterStats.menCount})` },
-                    { id: 'female_14plus', label: `👩 Women (${rosterStats.womenCount})` },
-                    { id: 'male_9_13', label: `👦 Boy(9-13) (${rosterStats.boysCount})` },
-                    { id: 'female_9_13', label: `👧 Girl(9-13) (${rosterStats.girlsCount})` },
+                    { id: 'male_18plus', label: `👨 Men (18+) (${rosterStats.men18PlusCount})` },
+                    { id: 'female_18plus', label: `👩 Women (18+) (${rosterStats.women18PlusCount})` },
+                    { id: 'male_13_18', label: `👦 Boy (13-18) (${rosterStats.boys13_18Count})` },
+                    { id: 'female_13_18', label: `👧 Girl (13-18) (${rosterStats.girls13_18Count})` },
+                    { id: 'male_9_12', label: `🧒 Boy (9-12) (${rosterStats.boys9_12Count})` },
+                    { id: 'female_9_12', label: `👧 Girl (9-12) (${rosterStats.girls9_12Count})` },
                   ].map((chip) => (
                     <button
                       key={chip.id}
-                      onClick={() => {
-                        if (chip.id === 'all') {
-                          setRosterGenderFilter('all');
-                        } else if (chip.id === 'male_14plus' || chip.id === 'female_14plus' || chip.id === 'male_9_13' || chip.id === 'female_9_13') {
-                          setRosterGenderFilter(chip.id as any);
-                        }
-                      }}
+                      onClick={() => setRosterGenderFilter(chip.id as any)}
                       className={cn(
                         'px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95',
                         rosterGenderFilter === chip.id
