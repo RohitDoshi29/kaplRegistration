@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import confetti from 'canvas-confetti';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { getDatabase, isUsingD1 } from './lib/get-database';
 import { Player, PlayerRole, PaymentMethod, PaymentStatus } from './types';
 import { cn } from './lib/utils';
@@ -2019,23 +2018,20 @@ export default function App() {
                 )}
               </div>
             ) : rosterViewMode === 'grid' ? (
-              /* Enhanced Grid View with Virtual Scrolling */
-              (() => {
-                const rowVirtualizer = useVirtualizer({
-                  count: Math.ceil(filteredRoster.length / 4),
-                  size: 380,
-                  overscan: 5,
-                  estimateSize: () => 380,
-                });
-
-                return (
-                  <div ref={gridContainerRef} className="space-y-5" style={{ height: 'auto' }}>
-                    {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-                      const rowStart = virtualItem.index * 4;
-                      const rowPlayers = filteredRoster.slice(rowStart, rowStart + 4);
-
-                      return (
-                        <div key={virtualItem.index} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              <div ref={gridContainerRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {filteredRoster.map((player) => {
+                  const isNewlyRegistered = newlyRegisteredPlayer && player.id === newlyRegisteredPlayer.id;
+                  return (
+                    <div
+                      key={player.id}
+                      onClick={() => handleOpenPlayerModal(player)}
+                      className={cn(
+                        'group relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-5 transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-2 sm:space-y-2.5 active:scale-[0.99] h-[360px]',
+                        isNewlyRegistered
+                          ? 'border-amber-400 bg-gradient-to-b from-amber-500/15 via-[#161C2E] to-[#0E1320] shadow-xl shadow-amber-500/20 ring-2 ring-amber-400/40'
+                          : 'border-white/[0.08] bg-[#0E1320]/80 hover:border-amber-400/50 hover:bg-[#121829] hover:shadow-xl hover:shadow-black/50 hover:-translate-y-0.5'
+                      )}
+                    >
                           {rowPlayers.map((player) => {
                   const isNewlyRegistered = newlyRegisteredPlayer && player.id === newlyRegisteredPlayer.id;
 
@@ -2153,9 +2149,7 @@ export default function App() {
                         </div>
                       );
                     })}
-                  </div>
-                );
-              })()
+              </div>
             ) : (
               /* Enhanced Table View */
               <div className="rounded-3xl border border-white/[0.08] bg-[#0E1320]/80 overflow-hidden shadow-xl">
