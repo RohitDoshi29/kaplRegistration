@@ -134,7 +134,6 @@ export default function App() {
   const [rosterSearch, setRosterSearch] = useState('');
   const [rosterRoleFilter, setRosterRoleFilter] = useState('all');
   const [rosterGenderFilter, setRosterGenderFilter] = useState<'all' | 'male' | 'female' | 'male_14plus' | 'female_14plus' | 'male_9_13' | 'female_9_13'>('all');
-  const [rosterTournamentFilter, setRosterTournamentFilter] = useState('all');
   const [rosterStatusFilter, setRosterStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
   const [rosterSortBy, setRosterSortBy] = useState<'newest' | 'oldest' | 'name' | 'jersey'>('newest');
   const [rosterViewMode, setRosterViewMode] = useState<'grid' | 'table'>('grid');
@@ -702,7 +701,6 @@ export default function App() {
     rosterSearch.trim() ||
     rosterRoleFilter !== 'all' ||
     rosterGenderFilter !== 'all' ||
-    rosterTournamentFilter !== 'all' ||
     rosterStatusFilter !== 'all' ||
     rosterSortBy !== 'newest'
   );
@@ -711,7 +709,6 @@ export default function App() {
     setRosterSearch('');
     setRosterRoleFilter('all');
     setRosterGenderFilter('all');
-    setRosterTournamentFilter('all');
     setRosterStatusFilter('all');
     setRosterSortBy('newest');
   };
@@ -742,7 +739,6 @@ export default function App() {
         if (rosterGenderFilter === 'male' && p.gender !== 'male') return false;
         if (rosterGenderFilter === 'female' && p.gender !== 'female') return false;
       }
-      if (rosterTournamentFilter !== 'all' && p.tournament_id !== rosterTournamentFilter) return false;
       if (rosterStatusFilter !== 'all') {
         const isPaid = p.payment_status === 'paid';
         if (rosterStatusFilter === 'paid' && !isPaid) return false;
@@ -772,7 +768,7 @@ export default function App() {
       }
       return 0;
     });
-  }, [registeredPlayers, rosterSearch, rosterRoleFilter, rosterGenderFilter, rosterTournamentFilter, rosterStatusFilter, rosterSortBy]);
+  }, [registeredPlayers, rosterSearch, rosterRoleFilter, rosterGenderFilter, rosterStatusFilter, rosterSortBy]);
 
   // Role badges helper
   const getRoleBadge = (r: PlayerRole | string) => {
@@ -1907,26 +1903,6 @@ export default function App() {
               {/* Row 2: Filter Pills - horizontal scrollable strip on mobile with no scrollbar */}
               <div className="pt-2 border-t border-white/[0.05] space-y-2">
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 sm:mx-0 sm:px-0 sm:flex-wrap scrollbar-none text-xs">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">League:</span>
-                  {[
-                    { id: 'all', label: `All` },
-                    { id: 'kapl-3-mens', label: `👨 Men's` },
-                    { id: 'kapl-3-womens', label: `👩 Women's` },
-                  ].map((chip) => (
-                    <button
-                      key={chip.id}
-                      onClick={() => setRosterTournamentFilter(chip.id as any)}
-                      className={cn(
-                        'px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95',
-                        rosterTournamentFilter === chip.id
-                          ? 'bg-blue-500 text-white shadow-sm'
-                          : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
-                      )}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">Role:</span>
                   {[
                     { id: 'all', label: `All Roles` },
