@@ -1965,19 +1965,13 @@ export default function App() {
                       onClick={() => {
                         if (chip.id === 'all') {
                           setRosterGenderFilter('all');
-                        } else if (chip.id === 'male_14plus') {
-                          setRosterGenderFilter('male');
-                        } else if (chip.id === 'female_14plus') {
-                          setRosterGenderFilter('female');
-                        } else {
-                          setRosterGenderFilter(chip.id.startsWith('male') ? 'male' : 'female');
+                        } else if (chip.id === 'male_14plus' || chip.id === 'female_14plus' || chip.id === 'male_9_13' || chip.id === 'female_9_13') {
+                          setRosterGenderFilter(chip.id as any);
                         }
                       }}
                       className={cn(
                         'px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95',
-                        (chip.id === 'all' && rosterGenderFilter === 'all') ||
-                        (chip.id === 'male_14plus' && rosterGenderFilter === 'male') ||
-                        (chip.id === 'female_14plus' && rosterGenderFilter === 'female')
+                        rosterGenderFilter === chip.id
                           ? 'bg-cyan-500 text-black shadow-sm'
                           : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
                       )}
