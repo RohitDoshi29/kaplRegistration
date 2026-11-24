@@ -1,3 +1,4 @@
+/// <reference types="@cloudflare/workers-types" />
 /**
  * Cloudflare Worker - Player API Handler
  * Handles REST API endpoints for the player registration system using D1 database
@@ -220,8 +221,8 @@ async function sendRegistrationEmail(player: Player, env: Env): Promise<void> {
       return;
     }
 
-    const data = await response.json();
-    console.log('✅ Email sent successfully! ID:', data.id);
+    const data = (await response.json()) as any;
+    console.log('✅ Email sent successfully! ID:', data?.id);
   } catch (error) {
     console.error('❌ Failed to send email:', error);
   }

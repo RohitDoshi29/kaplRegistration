@@ -35,8 +35,8 @@ class D1Client {
       body: JSON.stringify(player),
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to insert player');
+      const error = (await response.json()) as any;
+      throw new Error(error?.message || 'Failed to insert player');
     }
     return response.json();
   }
