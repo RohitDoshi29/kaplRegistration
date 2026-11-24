@@ -2025,7 +2025,7 @@ export default function App() {
                   count: Math.ceil(filteredRoster.length / 4),
                   size: 380,
                   overscan: 5,
-                  estimateSize: useCallback(() => 380, []),
+                  estimateSize: () => 380,
                 });
 
                 return (
