@@ -134,7 +134,7 @@ export default function App() {
   const [isLoadingRoster, setIsLoadingRoster] = useState(true);
   const [rosterSearch, setRosterSearch] = useState('');
   const [rosterRoleFilter, setRosterRoleFilter] = useState('all');
-  const [rosterGenderFilter, setRosterGenderFilter] = useState<'all' | 'male' | 'female'>('all');
+  const [rosterGenderFilter, setRosterGenderFilter] = useState<'all' | 'male' | 'female' | 'male_14plus' | 'female_14plus' | 'male_9_13' | 'female_9_13'>('all');
   const [rosterTournamentFilter, setRosterTournamentFilter] = useState('all');
   const [rosterStatusFilter, setRosterStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
   const [rosterSortBy, setRosterSortBy] = useState<'newest' | 'oldest' | 'name' | 'jersey'>('newest');
@@ -687,12 +687,16 @@ export default function App() {
     const pending = total - paid;
     const maleCount = registeredPlayers.filter((p) => p.gender === 'male').length;
     const femaleCount = registeredPlayers.filter((p) => p.gender === 'female').length;
+    const menCount = registeredPlayers.filter((p) => p.gender === 'male' && (!p.age || Number(p.age) >= 14)).length;
+    const womenCount = registeredPlayers.filter((p) => p.gender === 'female' && (!p.age || Number(p.age) >= 14)).length;
+    const boysCount = registeredPlayers.filter((p) => p.gender === 'male' && p.age && Number(p.age) >= 9 && Number(p.age) <= 13).length;
+    const girlsCount = registeredPlayers.filter((p) => p.gender === 'female' && p.age && Number(p.age) >= 9 && Number(p.age) <= 13).length;
     const allRounders = registeredPlayers.filter((p) => p.role === 'all_rounder').length;
     const batters = registeredPlayers.filter((p) => p.role === 'batter').length;
     const bowlers = registeredPlayers.filter((p) => p.role === 'bowler').length;
     const keepers = registeredPlayers.filter((p) => p.role === 'wicket_keeper').length;
 
-    return { total, paid, pending, maleCount, femaleCount, allRounders, batters, bowlers, keepers };
+    return { total, paid, pending, maleCount, femaleCount, menCount, womenCount, boysCount, girlsCount, allRounders, batters, bowlers, keepers };
   }, [registeredPlayers]);
 
   const hasActiveFilters = Boolean(
@@ -731,7 +735,14 @@ export default function App() {
         }
       }
       if (rosterRoleFilter !== 'all' && p.role !== rosterRoleFilter) return false;
-      if (rosterGenderFilter !== 'all' && p.gender !== rosterGenderFilter) return false;
+      if (rosterGenderFilter !== 'all') {
+        if (rosterGenderFilter === 'male_14plus' && !(p.gender === 'male' && (!p.age || Number(p.age) >= 14))) return false;
+        if (rosterGenderFilter === 'female_14plus' && !(p.gender === 'female' && (!p.age || Number(p.age) >= 14))) return false;
+        if (rosterGenderFilter === 'male_9_13' && !(p.gender === 'male' && p.age && Number(p.age) >= 9 && Number(p.age) <= 13)) return false;
+        if (rosterGenderFilter === 'female_9_13' && !(p.gender === 'female' && p.age && Number(p.age) >= 9 && Number(p.age) <= 13)) return false;
+        if (rosterGenderFilter === 'male' && p.gender !== 'male') return false;
+        if (rosterGenderFilter === 'female' && p.gender !== 'female') return false;
+      }
       if (rosterTournamentFilter !== 'all' && p.tournament_id !== rosterTournamentFilter) return false;
       if (rosterStatusFilter !== 'all') {
         const isPaid = p.payment_status === 'paid';
@@ -1932,6 +1943,42 @@ export default function App() {
                         'px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95',
                         rosterRoleFilter === chip.id
                           ? 'bg-amber-500 text-black shadow-sm'
+                          : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
+                      )}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 sm:mx-0 sm:px-0 sm:flex-wrap scrollbar-none text-xs pt-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">Category:</span>
+                  {[
+                    { id: 'all', label: `All` },
+                    { id: 'male_14plus', label: `👨 Men (${rosterStats.menCount})` },
+                    { id: 'female_14plus', label: `👩 Women (${rosterStats.womenCount})` },
+                    { id: 'male_9_13', label: `👦 Boy(9-13) (${rosterStats.boysCount})` },
+                    { id: 'female_9_13', label: `👧 Girl(9-13) (${rosterStats.girlsCount})` },
+                  ].map((chip) => (
+                    <button
+                      key={chip.id}
+                      onClick={() => {
+                        if (chip.id === 'all') {
+                          setRosterGenderFilter('all');
+                        } else if (chip.id === 'male_14plus') {
+                          setRosterGenderFilter('male');
+                        } else if (chip.id === 'female_14plus') {
+                          setRosterGenderFilter('female');
+                        } else {
+                          setRosterGenderFilter(chip.id.startsWith('male') ? 'male' : 'female');
+                        }
+                      }}
+                      className={cn(
+                        'px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 active:scale-95',
+                        (chip.id === 'all' && rosterGenderFilter === 'all') ||
+                        (chip.id === 'male_14plus' && rosterGenderFilter === 'male') ||
+                        (chip.id === 'female_14plus' && rosterGenderFilter === 'female')
+                          ? 'bg-cyan-500 text-black shadow-sm'
                           : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08]'
                       )}
                     >
