@@ -151,6 +151,8 @@ export default function App() {
   const [rosterStatusFilter, setRosterStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
   const [rosterSortBy, setRosterSortBy] = useState<'newest' | 'oldest' | 'name' | 'jersey'>('newest');
   const [rosterViewMode, setRosterViewMode] = useState<'grid' | 'table'>('grid');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PLAYERS_PER_PAGE = 20;
 
   // Player Detail & Lightbox Modal State
   const [selectedPlayerModal, setSelectedPlayerModal] = useState<Player | null>(null);
@@ -817,6 +819,18 @@ export default function App() {
       return 0;
     });
   }, [registeredPlayers, rosterSearch, rosterRoleFilter, rosterGenderFilter, rosterStatusFilter, rosterSortBy]);
+
+  // Paginated roster
+  const totalPages = Math.ceil(filteredRoster.length / PLAYERS_PER_PAGE);
+  const paginatedRoster = useMemo(() => {
+    const startIdx = (currentPage - 1) * PLAYERS_PER_PAGE;
+    return filteredRoster.slice(startIdx, startIdx + PLAYERS_PER_PAGE);
+  }, [filteredRoster, currentPage]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [rosterSearch, rosterRoleFilter, rosterGenderFilter, rosterStatusFilter, rosterSortBy]);
 
   // Role badges helper
   const getRoleBadge = (r: PlayerRole | string) => {
@@ -2038,8 +2052,9 @@ export default function App() {
                 )}
               </div>
             ) : rosterViewMode === 'grid' ? (
-              <div ref={gridContainerRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                {filteredRoster.map((player) => {
+              <div className="space-y-5">
+                <div ref={gridContainerRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  {paginatedRoster.map((player) => {
                   const isNewlyRegistered = newlyRegisteredPlayer && player.id === newlyRegisteredPlayer.id;
 
                   return (
@@ -2153,6 +2168,50 @@ export default function App() {
                     </div>
                   );
                 })}
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl sm:rounded-3xl bg-[#0E1320]/70 border border-white/[0.08]">
+                    <span className="text-sm text-slate-400">
+                      Page <strong className="text-white font-bold">{currentPage}</strong> of{' '}
+                      <strong className="text-white font-bold">{totalPages}</strong> • Showing{' '}
+                      <strong className="text-white font-bold">{paginatedRoster.length}</strong> players
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 rounded-xl bg-white/[0.08] border border-white/10 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/[0.12] active:scale-95 transition-all"
+                      >
+                        ← Previous
+                      </button>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={cn(
+                              'w-9 h-9 rounded-lg font-bold text-xs transition-all active:scale-95',
+                              currentPage === page
+                                ? 'bg-amber-500 text-black shadow-sm'
+                                : 'bg-white/[0.08] text-slate-300 hover:bg-white/[0.12] border border-white/10'
+                            )}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2 rounded-xl bg-white/[0.08] border border-white/10 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/[0.12] active:scale-95 transition-all"
+                      >
+                        Next →
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               /* Enhanced Table View */
@@ -2175,7 +2234,7 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/[0.05]">
-                      {filteredRoster.map((player) => (
+                      {paginatedRoster.map((player) => (
                         <tr
                           key={player.id}
                           onClick={() => handleOpenPlayerModal(player)}
@@ -2242,6 +2301,49 @@ export default function App() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Pagination Controls for Table View */}
+                {totalPages > 1 && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-white/[0.08]">
+                    <span className="text-sm text-slate-400">
+                      Page <strong className="text-white font-bold">{currentPage}</strong> of{' '}
+                      <strong className="text-white font-bold">{totalPages}</strong> • Showing{' '}
+                      <strong className="text-white font-bold">{paginatedRoster.length}</strong> players
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="px-4 py-2 rounded-xl bg-white/[0.08] border border-white/10 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/[0.12] active:scale-95 transition-all"
+                      >
+                        ← Previous
+                      </button>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={cn(
+                              'w-9 h-9 rounded-lg font-bold text-xs transition-all active:scale-95',
+                              currentPage === page
+                                ? 'bg-amber-500 text-black shadow-sm'
+                                : 'bg-white/[0.08] text-slate-300 hover:bg-white/[0.12] border border-white/10'
+                            )}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="px-4 py-2 rounded-xl bg-white/[0.08] border border-white/10 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/[0.12] active:scale-95 transition-all"
+                      >
+                        Next →
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
