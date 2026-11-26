@@ -774,7 +774,15 @@ export default {
       return errorResponse('Not found', 404);
     } catch (error) {
       console.error('Unhandled error:', error);
-      return errorResponse('Internal server error', 500);
+      return new Response(JSON.stringify({ error: 'Internal server error' }), {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
     }
   },
 };
