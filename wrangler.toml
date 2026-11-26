@@ -2,8 +2,18 @@
 name = "player-registration-portal"
 main = "src/worker/player-api.ts"
 compatibility_date = "2024-12-16"
+compatibility_flags = ["nodejs_compat"]
 
-# Production environment
+# Default environment (player-registration-portal.workers.dev)
+[[d1_databases]]
+binding = "DB"
+database_name = "player-registration-d1"
+database_id = "2c49679d-3a40-4397-9a37-8b8933febac3"
+
+[vars]
+ALERT_TO_EMAIL = "rohit.doshi2007@gmail.com"
+
+# Production environment (player-registration-portal-production.workers.dev)
 [env.production]
 
 [[env.production.d1_databases]]

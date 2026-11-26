@@ -8,6 +8,7 @@
  *
  * Routes:
  *   GET    /api/players               - Get all players (paginated)
+ *   GET    /api/players/:id/photo     - Get decoded player profile photo
  *   GET    /api/players/:id           - Get player by ID
  *   GET    /api/players/search?q=...  - Search players
  *   GET    /api/players/tournament/:id - Get players by tournament
@@ -21,6 +22,7 @@
  *   GET    /health                    - Health check
  */
 
+import { Buffer } from 'node:buffer';
 import { Player, PlayerRole, PaymentStatus } from '../types';
 
 // Type definitions for Cloudflare Workers environment
@@ -89,6 +91,62 @@ function handleOptions(): Response {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   });
+}
+
+const PHOTO_API_MARKER = '__PHOTO_API__';
+
+/**
+ * Build SQL projection for player queries.
+ * By default omits heavy payment_receipt_url blobs and replaces data: photo_urls
+ * with a lightweight marker hydrated into /api/players/:id/photo URLs so responses
+ * stay well under Cloudflare Worker CPU and payload limits.
+ */
+function buildPlayerSelect(options: { includePhotos?: boolean; includeReceipts?: boolean } = {}): string {
+  const { includePhotos = false, includeReceipts = false } = options;
+  const photoExpr = includePhotos
+    ? "NULLIF(photo_url, 'NULL') as photo_url"
+    : `CASE WHEN photo_url LIKE 'data:%' THEN '${PHOTO_API_MARKER}' ELSE NULLIF(photo_url, 'NULL') END as photo_url`;
+  const receiptExpr = includeReceipts
+    ? ", NULLIF(payment_receipt_url, 'NULL') as payment_receipt_url"
+    : '';
+
+  return `
+    NULLIF(id, 'NULL') as id,
+    NULLIF(name, 'NULL') as name,
+    NULLIF(mobile_number, 'NULL') as mobile_number,
+    NULLIF(email, 'NULL') as email,
+    NULLIF(role, 'NULL') as role,
+    NULLIF(batting_style, 'NULL') as batting_style,
+    NULLIF(bowling_style, 'NULL') as bowling_style,
+    jersey_number,
+    NULLIF(tournament_id, 'NULL') as tournament_id,
+    base_price,
+    ${photoExpr},
+    NULLIF(experience, 'NULL') as experience,
+    NULLIF(previous_team, 'NULL') as previous_team,
+    NULLIF(past_achievements, 'NULL') as past_achievements,
+    NULLIF(bio, 'NULL') as bio,
+    NULLIF(gender, 'NULL') as gender,
+    age,
+    NULLIF(flat_no, 'NULL') as flat_no,
+    NULLIF(payment_method, 'NULL') as payment_method,
+    NULLIF(payment_status, 'NULL') as payment_status,
+    NULLIF(transaction_id, 'NULL') as transaction_id,
+    payment_amount,
+    NULLIF(payment_verification, 'NULL') as payment_verification,
+    NULLIF(created_at, 'NULL') as created_at,
+    NULLIF(updated_at, 'NULL') as updated_at${receiptExpr}
+  `;
+}
+
+/**
+ * Hydrate __PHOTO_API__ marker into an absolute /api/players/:id/photo URL.
+ */
+function hydratePhotoUrl<T extends { id?: string; photo_url?: string | null }>(player: T, origin: string): T {
+  if (player.photo_url === PHOTO_API_MARKER && player.id) {
+    return { ...player, photo_url: `${origin}/api/players/${encodeURIComponent(player.id)}/photo` };
+  }
+  return player;
 }
 
 /**
@@ -229,34 +287,61 @@ async function sendRegistrationEmail(player: Player, env: Env): Promise<void> {
 }
 
 /**
+ * Resolve SQL ORDER BY clause safely from query params.
+ */
+function resolveOrderBy(sortBy: string, orderParam: string | null): string {
+  switch (sortBy) {
+    case 'oldest':
+      return 'created_at ASC';
+    case 'newest':
+      return 'created_at DESC';
+    case 'name':
+      return `name ${orderParam === 'desc' ? 'DESC' : 'ASC'}`;
+    case 'jersey':
+    case 'jersey_number':
+      return `jersey_number ${orderParam === 'desc' ? 'DESC' : 'ASC'}`;
+    case 'payment_status':
+      return `payment_status ${orderParam === 'asc' ? 'ASC' : 'DESC'}`;
+    case 'created_at':
+    default:
+      return `created_at ${orderParam === 'asc' ? 'ASC' : 'DESC'}`;
+  }
+}
+
+/**
  * GET /api/players - Get all players with optional filtering and pagination
  */
 async function handleGetPlayers(request: Request, env: Env): Promise<Response> {
   try {
     const url = new URL(request.url);
-    const limit = parseInt(url.searchParams.get('limit') || '50');
-    const offset = parseInt(url.searchParams.get('offset') || '0');
+    const parsedLimit = parseInt(url.searchParams.get('limit') || '50', 10);
+    const parsedOffset = parseInt(url.searchParams.get('offset') || '0', 10);
+    const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 50;
+    const offset = Number.isFinite(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0;
     const sortBy = url.searchParams.get('sortBy') || 'created_at';
+    const orderBy = resolveOrderBy(sortBy, url.searchParams.get('order'));
 
-    const validSortFields = ['name', 'created_at', 'jersey_number', 'payment_status'];
-    const sortField = validSortFields.includes(sortBy) ? sortBy : 'created_at';
-    const orderAsc = url.searchParams.get('order') === 'asc' ? 'ASC' : 'DESC';
+    const includePhotos = url.searchParams.get('includePhotos') === 'true';
+    const includeReceipts = url.searchParams.get('includeReceipts') === 'true';
 
     const db = env.DB;
     if (!isD1Database(db)) {
       return errorResponse('Database not configured', 500);
     }
 
+    const columns = buildPlayerSelect({ includePhotos, includeReceipts });
     const stmt = db.prepare(
-      `SELECT * FROM players ORDER BY ${sortField} ${orderAsc} LIMIT ? OFFSET ?`
+      `SELECT ${columns} FROM players ORDER BY ${orderBy} LIMIT ? OFFSET ?`
     );
     const result = await stmt.bind(limit, offset).all<Player>();
 
     const countStmt = db.prepare('SELECT COUNT(*) as count FROM players');
     const countResult = await countStmt.first<{ count: number }>();
 
+    const players = (result.results || []).map((p) => hydratePhotoUrl(p, url.origin));
+
     return jsonResponse({
-      players: cleanNullStrings(result.results || []),
+      players,
       total: countResult?.count || 0,
       limit,
       offset,
@@ -264,6 +349,66 @@ async function handleGetPlayers(request: Request, env: Env): Promise<Response> {
   } catch (error) {
     console.error('GET /api/players error:', error);
     return errorResponse('Failed to fetch players', 500);
+  }
+}
+
+/**
+ * GET /api/players/:id/photo - Serve decoded binary photo for a player
+ */
+async function handleGetPlayerPhoto(
+  request: Request,
+  env: Env,
+  id: string
+): Promise<Response> {
+  try {
+    const db = env.DB;
+    if (!isD1Database(db)) {
+      return errorResponse('Database not configured', 500);
+    }
+
+    const row = await db
+      .prepare('SELECT photo_url FROM players WHERE id = ?')
+      .bind(id)
+      .first<{ photo_url: string | null }>();
+
+    if (!row?.photo_url || row.photo_url === 'NULL') {
+      return errorResponse('Photo not found', 404);
+    }
+
+    const photoUrl = row.photo_url.trim();
+    if (photoUrl.startsWith('http://') || photoUrl.startsWith('https://')) {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: photoUrl,
+          'Cache-Control': 'public, max-age=86400',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    const b64Marker = ';base64,';
+    const b64Idx = photoUrl.indexOf(b64Marker);
+    if (!photoUrl.startsWith('data:') || b64Idx === -1) {
+      return errorResponse('Unsupported photo format', 400);
+    }
+
+    const mimeType = photoUrl.slice(5, b64Idx) || 'image/jpeg';
+    const b64Data = photoUrl.slice(b64Idx + b64Marker.length);
+    const bytes = Buffer.from(b64Data, 'base64');
+
+    return new Response(bytes, {
+      status: 200,
+      headers: {
+        'Content-Type': mimeType,
+        'Cache-Control': 'public, max-age=86400',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      },
+    });
+  } catch (error) {
+    console.error('GET /api/players/:id/photo error:', error);
+    return errorResponse('Failed to fetch photo', 500);
   }
 }
 
@@ -276,19 +421,23 @@ async function handleGetPlayerById(
   id: string
 ): Promise<Response> {
   try {
+    const url = new URL(request.url);
+    const includePhotos = url.searchParams.get('includePhotos') === 'true';
+
     const db = env.DB;
     if (!isD1Database(db)) {
       return errorResponse('Database not configured', 500);
     }
 
-    const stmt = db.prepare('SELECT * FROM players WHERE id = ?');
+    const columns = buildPlayerSelect({ includePhotos, includeReceipts: true });
+    const stmt = db.prepare(`SELECT ${columns} FROM players WHERE id = ?`);
     const player = await stmt.bind(id).first<Player>();
 
     if (!player) {
       return errorResponse('Player not found', 404);
     }
 
-    return jsonResponse({ player: cleanNullStrings(player) });
+    return jsonResponse({ player: hydratePhotoUrl(player, url.origin) });
   } catch (error) {
     console.error('GET /api/players/:id error:', error);
     return errorResponse('Failed to fetch player', 500);
@@ -313,8 +462,9 @@ async function handleSearchPlayers(request: Request, env: Env): Promise<Response
     }
 
     const searchPattern = `%${query}%`;
+    const columns = buildPlayerSelect();
     const stmt = db.prepare(
-      `SELECT * FROM players
+      `SELECT ${columns} FROM players
        WHERE name LIKE ?
           OR mobile_number LIKE ?
           OR transaction_id LIKE ?
@@ -326,7 +476,8 @@ async function handleSearchPlayers(request: Request, env: Env): Promise<Response
       .bind(searchPattern, searchPattern, searchPattern, searchPattern)
       .all<Player>();
 
-    return jsonResponse({ players: result.results || [] });
+    const players = (result.results || []).map((p) => hydratePhotoUrl(p, url.origin));
+    return jsonResponse({ players });
   } catch (error) {
     console.error('GET /api/players/search error:', error);
     return errorResponse('Failed to search players', 500);
@@ -342,17 +493,20 @@ async function handleGetByTournament(
   tournamentId: string
 ): Promise<Response> {
   try {
+    const url = new URL(request.url);
     const db = env.DB;
     if (!isD1Database(db)) {
       return errorResponse('Database not configured', 500);
     }
 
+    const columns = buildPlayerSelect();
     const stmt = db.prepare(
-      'SELECT * FROM players WHERE tournament_id = ? ORDER BY created_at DESC'
+      `SELECT ${columns} FROM players WHERE tournament_id = ? ORDER BY created_at DESC`
     );
     const result = await stmt.bind(tournamentId).all<Player>();
 
-    return jsonResponse({ players: result.results || [] });
+    const players = (result.results || []).map((p) => hydratePhotoUrl(p, url.origin));
+    return jsonResponse({ players });
   } catch (error) {
     console.error('GET /api/players/tournament/:id error:', error);
     return errorResponse('Failed to fetch tournament players', 500);
@@ -368,6 +522,7 @@ async function handleGetByStatus(
   status: string
 ): Promise<Response> {
   try {
+    const url = new URL(request.url);
     if (!['paid', 'pending'].includes(status)) {
       return errorResponse('Invalid payment status', 400);
     }
@@ -377,12 +532,14 @@ async function handleGetByStatus(
       return errorResponse('Database not configured', 500);
     }
 
+    const columns = buildPlayerSelect();
     const stmt = db.prepare(
-      'SELECT * FROM players WHERE payment_status = ? ORDER BY created_at DESC'
+      `SELECT ${columns} FROM players WHERE payment_status = ? ORDER BY created_at DESC`
     );
     const result = await stmt.bind(status).all<Player>();
 
-    return jsonResponse({ players: result.results || [] });
+    const players = (result.results || []).map((p) => hydratePhotoUrl(p, url.origin));
+    return jsonResponse({ players });
   } catch (error) {
     console.error('GET /api/players/status/:status error:', error);
     return errorResponse('Failed to fetch players by status', 500);
@@ -624,9 +781,9 @@ async function handleGetStats(request: Request, env: Env): Promise<Response> {
       return errorResponse('Database not configured', 500);
     }
 
-    // Get all players
-    const playersStmt = db.prepare('SELECT * FROM players');
-    const playersResult = await playersStmt.all<Player>();
+    // Get lightweight player fields for statistics
+    const playersStmt = db.prepare('SELECT payment_status, gender, role, tournament_id FROM players');
+    const playersResult = await playersStmt.all<Pick<Player, 'payment_status' | 'gender' | 'role' | 'tournament_id'>>();
     const players = playersResult.results || [];
 
     const stats = {
@@ -732,7 +889,7 @@ export default {
         return handleGetStats(request, env);
       }
 
-      if (pathname.match(/^\/api\/players\/search\?/)) {
+      if (pathname === '/api/players/search' && request.method === 'GET') {
         return handleSearchPlayers(request, env);
       }
 
@@ -750,10 +907,15 @@ export default {
         }
       }
 
+      const photoMatch = pathname.match(/^\/api\/players\/([^/]+)\/photo$/);
+      if (photoMatch && request.method === 'GET') {
+        return handleGetPlayerPhoto(request, env, decodeURIComponent(photoMatch[1]));
+      }
+
       if (pathname.match(/^\/api\/players\/[^/]+$/) && request.method === 'GET') {
         const id = pathname.split('/').pop();
         if (id) {
-          return handleGetPlayerById(request, env, id);
+          return handleGetPlayerById(request, env, decodeURIComponent(id));
         }
       }
 

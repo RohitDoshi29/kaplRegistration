@@ -341,7 +341,14 @@ export class D1Adapter implements DatabaseAdapter {
     });
 
     if (!response.ok) {
-      throw new Error(`D1 request failed: ${response.status} ${response.statusText}`);
+      let errorMsg = `D1 request failed: ${response.status} ${response.statusText}`;
+      try {
+        const errBody = (await response.json()) as { error?: string; message?: string };
+        if (errBody?.error || errBody?.message) {
+          errorMsg = errBody.error || errBody.message || errorMsg;
+        }
+      } catch {}
+      throw new Error(errorMsg);
     }
 
     return response.json();

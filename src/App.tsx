@@ -180,7 +180,7 @@ export default function App() {
               const cleanBio = rawBio.replace(/\[Flat:[^\]]+\]\s*/i, '').trim();
 
               let photoUrl = p.photo_url;
-              if (photoUrl && !isBlobUrl(photoUrl)) {
+              if (photoUrl && !isBlobUrl(photoUrl) && !photoUrl.includes('/api/players/')) {
                 try {
                   photoUrl = await compressImage(photoUrl, 200, 0.65);
                 } catch {
@@ -275,12 +275,13 @@ export default function App() {
     const handleSync = () => {
       fetchRegisteredPlayers();
     };
-    window.addEventListener('focus', handleSync);
-    document.addEventListener('visibilitychange', () => {
+    const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         handleSync();
       }
-    });
+    };
+    window.addEventListener('focus', handleSync);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Periodic poll every 60 seconds
     const intervalId = setInterval(() => {
@@ -289,6 +290,7 @@ export default function App() {
 
     return () => {
       window.removeEventListener('focus', handleSync);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(intervalId);
     };
   }, [fetchRegisteredPlayers]);
@@ -2090,7 +2092,7 @@ export default function App() {
                       <div className="flex items-start gap-3 sm:gap-3.5 pr-20 sm:pr-24">
                         <div className="w-16 h-16 sm:w-14 sm:h-14 rounded-2xl overflow-hidden bg-neutral-900 border border-white/15 flex items-center justify-center shrink-0 shadow-md group-hover:border-amber-400/60 transition-colors">
                           {player.photo_url ? (
-                            <img src={player.photo_url} alt={player.name} className="w-full h-full object-cover" />
+                            <img src={player.photo_url} alt={player.name} loading="lazy" className="w-full h-full object-cover" />
                           ) : (
                             <span className="text-3xl">{getRoleBadge(player.role).icon}</span>
                           )}
@@ -2243,7 +2245,7 @@ export default function App() {
                           <td className="py-3 px-4 font-bold text-white flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-xl overflow-hidden bg-white/10 flex items-center justify-center shrink-0 border border-white/10">
                               {player.photo_url ? (
-                                <img src={player.photo_url} alt={player.name} className="w-full h-full object-cover" />
+                                <img src={player.photo_url} alt={player.name} loading="lazy" className="w-full h-full object-cover" />
                               ) : (
                                 <span className="text-sm">{getRoleBadge(player.role).icon}</span>
                               )}
